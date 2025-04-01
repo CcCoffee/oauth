@@ -23,6 +23,7 @@
 
 - JDK 21+
 - Maven 3.6+
+- PostgreSQL 数据库
 
 ### 构建项目
 
@@ -75,14 +76,52 @@ java -jar target/api-auth-server-0.0.1-SNAPSHOT.jar
 作用域: message.read
 ```
 
-## 配置说明
+## 集群部署指南
 
-主要配置在`com.example.api_auth_server.config.AuthServerConfig`类中，包括：
+本项目支持在多实例集群环境中部署，关键配置包括：
 
-- JWT令牌的签名密钥配置
-- 客户端凭证配置
-- 令牌有效期配置
-- 授权服务器安全设置
+### 1. 数据库配置
+
+所有实例必须连接到相同的PostgreSQL数据库。在`application.yml`中配置数据库连接：
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://your-db-host:5432/oauth
+    username: your-username
+    password: your-password
+    driver-class-name: org.postgresql.Driver
+```
+
+### 2. 数据库表结构
+
+在首次启动前，确保PostgreSQL数据库中已创建所需表结构。项目会自动初始化表结构，具体SQL脚本位于：
+`src/main/resources/schema/oauth2-schema.sql`
+
+### 3. 密钥管理
+
+集群所有节点共享相同的JWT签名密钥。系统自动通过数据库表 `oauth2_jwt_keys` 管理密钥：
+- 首次启动时，系统会生成新密钥并存储到数据库
+- 后续所有实例都会从数据库获取相同的密钥
+- 密钥自动在集群间同步，无需手动配置
+
+### 4. 负载均衡配置
+
+在使用负载均衡器时，需要修改授权服务器颁发者URL：
+
+```yaml
+spring:
+  security:
+    oauth2:
+      authorizationserver:
+        issuer: https://your-load-balancer-domain
+```
+
+所有资源服务器也需要使用相同的颁发者URL。
+
+### 5. 会话共享
+
+本项目为无状态服务，所有状态都存储在数据库中，无需额外配置会话共享。
 
 ## 测试令牌获取
 
@@ -90,10 +129,11 @@ java -jar target/api-auth-server-0.0.1-SNAPSHOT.jar
 
 ```bash
 # 获取访问令牌
-curl -X POST -u "messaging-client:secret" \
-  "http://localhost:9000/oauth2/token" \
-  -d "grant_type=client_credentials&scope=message.read" \
-  -H "Content-Type: application/x-www-form-urlencoded"
+curl -X POST \
+  http://localhost:9000/oauth2/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -H "Authorization: Basic bWVzc2FnaW5nLWNsaWVudDpzZWNyZXQ=" \
+  -d "grant_type=client_credentials&scope=message.read"
 ```
 
 ## JWT令牌格式

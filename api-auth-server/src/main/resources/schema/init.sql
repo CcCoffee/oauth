@@ -1,0 +1,98 @@
+-- OAuth2初始化数据脚本（init.sql）
+
+-- 清理现有测试数据（可选）
+DELETE FROM oauth2_authorization_consent;
+DELETE FROM oauth2_authorization;
+DELETE FROM oauth2_registered_client;
+DELETE FROM oauth2_jwt_keys;
+
+-- 创建测试客户端
+--INSERT INTO oauth2_registered_client (
+--    id,
+--    client_id,
+--    client_id_issued_at,
+--    client_secret,
+--    client_secret_expires_at,
+--    client_name,
+--    client_authentication_methods,
+--    authorization_grant_types,
+--    redirect_uris,
+--    post_logout_redirect_uris,
+--    scopes,
+--    client_settings,
+--    token_settings
+--) VALUES (
+--    '4173994d-0e69-42e0-9b8f-5d70a3e2d684', -- UUID
+--    'messaging-client', -- 客户端ID
+--    CURRENT_TIMESTAMP, -- 客户端ID发布时间
+--    '{noop}secret', -- 客户端密钥（带有编码提示）
+--    NULL, -- 客户端密钥过期时间（NULL表示永不过期）
+--    'Messaging Client', -- 客户端名称
+--    'client_secret_basic', -- 认证方法
+--    'client_credentials', -- 授权类型
+--    NULL, -- 重定向URIs（对于客户端凭证流不需要）
+--    NULL, -- 登出后重定向URIs
+--    'message.read', -- 作用域
+--    '{"@class":"java.util.Collections$UnmodifiableMap","settings.client.require-proof-key":false,"settings.client.require-authorization-consent":false}', -- 客户端设置JSON
+--    '{"@class":"java.util.Collections$UnmodifiableMap","settings.token.reuse-refresh-tokens":true,"settings.token.id-token-signature-algorithm":"RS256","settings.token.access-token-time-to-live":"PT300S","settings.token.refresh-token-time-to-live":"PT1800S","settings.token.authorization-code-time-to-live":"PT300S"}' -- 令牌设置JSON
+--);
+
+-- 创建另一个带有授权码流程的客户端（可选）
+--INSERT INTO oauth2_registered_client (
+--    id,
+--    client_id,
+--    client_id_issued_at,
+--    client_secret,
+--    client_secret_expires_at,
+--    client_name,
+--    client_authentication_methods,
+--    authorization_grant_types,
+--    redirect_uris,
+--    post_logout_redirect_uris,
+--    scopes,
+--    client_settings,
+--    token_settings
+--) VALUES (
+--    '6236aa2a-fd50-4c7b-ae2d-f427b61db9b9', -- UUID
+--    'web-client', -- 客户端ID
+--    CURRENT_TIMESTAMP, -- 客户端ID发布时间
+--    '{noop}web-secret', -- 客户端密钥（带有编码提示）
+--    NULL, -- 客户端密钥过期时间（NULL表示永不过期）
+--    'Web Client', -- 客户端名称
+--    'client_secret_basic', -- 认证方法
+--    'authorization_code,refresh_token', -- 授权类型
+--    'http://localhost:8080/authorized,http://localhost:8080/login/oauth2/code/web-client', -- 重定向URIs
+--    'http://localhost:8080/logged-out', -- 登出后重定向URIs
+--    'openid,profile,message.read,message.write', -- 作用域
+--    '{"@class":"java.util.Collections$UnmodifiableMap","settings.client.require-proof-key":false,"settings.client.require-authorization-consent":true}', -- 客户端设置JSON
+--    '{"@class":"java.util.Collections$UnmodifiableMap","settings.token.reuse-refresh-tokens":true,"settings.token.id-token-signature-algorithm":"RS256","settings.token.access-token-time-to-live":"PT900S","settings.token.refresh-token-time-to-live":"P7D","settings.token.authorization-code-time-to-live":"PT300S"}' -- 令牌设置JSON
+--);
+
+-- 可以预先创建一个JWT密钥（可选，系统会自动创建）
+-- 下面使用一个示例密钥，实际应用中应该生成新的密钥
+--INSERT INTO oauth2_jwt_keys (
+--    id,
+--    key_id,
+--    public_key,
+--    private_key,
+--    issue_date,
+--    is_active
+--) VALUES (
+--    '79e20a02-64cf-48eb-b8a8-511357b258a4', -- UUID for record ID
+--    '2023-key-id', -- Key ID
+--    'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArYaYlKnGcKUJWcIp7k4zWq6EqwLLExQn8m9ENBnKKzMvNdJl+yqNHALJIZlHCdWcXX8y8+ByU4hklFdvIYKxJJMH9Bq1YcXbS8vQZ4YyYSTNe/IMvSJR1ujPK4/PjXx6nxf1rEgb5qV5yvpjfBkWF6AYMSLnxbKZmuATH+6qVNyuLQduCCHRGC9i8vhZi5hQp2/yWLmtt7sYIBTrY/GgJzF9g3EFx8nGQTBUWbHFSFfLm3K2BaC5r8QOjaorIcfXUCDx0sbD1J5tScZRnj8iCvpTMWEUrh6fJzYKHx6jBgS2xIVSQTSXY+VElYCCUxg3qdvXCiQMey0lbNiPKS3jjwIDAQAB', -- Base64编码的RSA公钥
+--    'MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCthpiUqcZwpQlZwinuTjNaroSrAssTFCfyb0Q0GcorMy810mX7Ko0cAskhmUcJ1ZxdfzLz4HJTiGSUV28hgrEkkwf0GrVhxdtLy9BnhjJhJM178gy9IlHW6M8rj8+NfHqfF/WsSBvmpXnK+mN8GRYXoBgxIufFspma4BMf7qpU3K4tB24IIdEYL2Ly+FmLmFCnb/JYua23uxggFOtj8aAnMX2DcQXHycZBMFRZscVIV8ubcrYFoLmvxA6Nqishx9dQIPHSxsPUnm1JxlGePyIK+lMxYRSuHp8nNgofHqMGBLbEhVJBNJdj5USVgIJTGDep29cKJAx7LSVs2I8pLeMPAgMBAAECggEBAKttHT2rizvBYsGNxVQjyZ5g7QHgJjUVCDf9h2CcIEh1kNYW9hsJ+FqZQhZhc4eR4vRW9UGZrpUuNZVmJPrM8G1eRbd2BWGjKqhv5XqxdCyGJfJZ7dXjZMTZbr6YtcVcnBsJsasYsozRRWCnM21iiCrzw+ptFAjj63MXMhUJELQPOsIVNxDYaGFtYc6CziYSDYTtMN6MKVDPcK9D9O/OIwOQQHjrVQrQyJgCt5qTIzHP/T2JQwFIRHSAYHJrZPPNvvbNA9ym7JqZXQpG/nvkROdVTnWBUgSA7LtD+BwK3AEYsJyEL1K7IB+mFP71peJnY32A4FRqVnwzVTLyfQREYQECgYEA5t4UDRzLx/QIxtA2s1xhGxG312h4zxFGGgkGxJJkJQEe0+s5wXzHGu3QHpKcpzrJvX8BEZIHx0u5B8u0wMFKEYi5ZNO7dqLuP5/JY5KfOvpSQsJQXrX9brzKjhEJY75UWestVQrpbQp3jpKiKNXHUTzIz8MOv1C0J8gZHZce/0ECgYEAwO8PKcJpkB2h2dIlccwluMH/hd7jGVkaGZoJZ8qBvUuLcWcq1vJ+gQENL6Y39QDbgkXZGzKgdOAWQbzLiAJp5sHRPrnzMdI2LmEcRLZMeQE7CKsIRlGtVFpZ1cqWCZmS3F9+qAdEd6uKVCaoGQ1/edcR/FrYKQIazqcqveUypI8CgYB6ZF+tnQJ+ZjLkfLcf9DnYhGDVxGlQdl4jEQCkWDJknf54z2l6J+M90epbjVYKhOQoI2bIEQTgVUAFGgTC3Vwc7+jUQROCno3RS8nY5/7jgLDLncNvRz9lKxsZh8Tq3VNvI5gCUzWR+eNPXnUPXHEeHCu+4v8haz8xiy+ebDTaQQKBgHnVRKGCMyLDtGzCJQFUhdwzIbI9gUyOLVFfImrnHfwXSQDcyvJt8Go6Ub3Ri5F9J200/4o8XY+C+9y+pJ7ERDSUMVKoqwvhAtZtUZ/Xk8KPq1mfmPXdULqKy5n4G6KLZaMTBg7EKrjL9g9pqNHOvYsQ+6LEZVXJisJQDnY+nQajAoGBALZfxC1EDWeXQxgLZuLs5xijOosOhQyXrS2ERjzaUfBP91L9uZj7QMCc5aNnuHsQM+Ll3jcOjkUIBnpjZo0YEDUMsk+E9IvuOC4RBhLMIrb2NCwPgCUWx8iiJqmLZPu7n2aZfZsTbQN8drsL9mTR6QZPZ0Z5deytk9tXiXiM5hgE', -- Base64编码的RSA私钥
+--    CURRENT_TIMESTAMP, -- 发布日期
+--    TRUE -- 是否激活
+--);
+
+-- 添加授权同意记录（可选，通常由用户授权时创建）
+--INSERT INTO oauth2_authorization_consent (
+--    registered_client_id,
+--    principal_name,
+--    authorities
+--) VALUES (
+--    '6236aa2a-fd50-4c7b-ae2d-f427b61db9b9', -- web-client的ID
+--    'user', -- 用户名
+--    'SCOPE_openid,SCOPE_profile,SCOPE_message.read' -- 授权的作用域
+--);
