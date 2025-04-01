@@ -1,13 +1,14 @@
 # API提供者演示项目
 
-这是一个基于Spring Boot的OAuth2资源服务器演示项目，演示如何创建受保护的API端点，要求客户端必须提供有效的OAuth2令牌才能访问。
+这是一个基于Spring Boot的OAuth2资源服务器演示项目，演示如何创建受客户端凭证授权保护的API端点。
 
 ## 项目架构
 
 本项目是OAuth2授权架构中的资源服务器组件，与授权服务器配合使用：
 
-- **授权服务器(auth-server)**：负责颁发和验证OAuth2令牌
+- **授权服务器(api-auth-server)**：负责颁发和验证OAuth2令牌
 - **API提供者(api-provider-demo)**：本项目，提供受OAuth2保护的API资源
+- **API消费者(api-consumer-demo)**：客户端应用，使用客户端凭证访问API
 
 ### 技术栈
 
@@ -50,6 +51,15 @@ java -jar target/api-provider-demo-0.0.1-SNAPSHOT.jar
 
 - **GET /api/message**：返回一个受保护的消息资源，需要有效的OAuth2令牌
 
+## 安全配置
+
+资源服务器配置为：
+
+- 仅对`/api/**`路径下的资源进行访问控制
+- 要求请求中必须包含有效的JWT令牌
+- 使用无状态（stateless）会话管理
+- 禁用CSRF保护，适合REST API
+
 ## 配置说明
 
 主要配置文件位于`src/main/resources/application.yml`：
@@ -66,25 +76,30 @@ spring:
           issuer-uri: http://localhost:9000  # 授权服务器地址
 ```
 
-## 测试
+## 客户端凭证流程
 
-项目包含用于测试OAuth2流程的Shell脚本，位于`src/test/shell/oauth-test.sh`。
+API提供者支持客户端凭证授权流程：
 
-### 使用测试脚本
+1. 客户端使用预配置的凭证从授权服务器获取JWT令牌
+2. 客户端在请求API时在Authorization头中包含该令牌
+3. 资源服务器验证JWT令牌的有效性和权限
+4. 验证通过后，资源服务器处理请求并返回数据
 
-1. 确保授权服务器和API提供者已启动
-2. 安装jq工具（用于JSON解析）：`brew install jq`（Mac）或`apt-get install jq`（Ubuntu/Debian）
-3. 执行测试脚本：
+## 测试API
+
+您可以使用curl命令测试API端点：
 
 ```bash
-cd src/test/shell
-chmod +x oauth-test.sh
-./oauth-test.sh
-```
+# 首先从授权服务器获取访问令牌
+curl -X POST -u "messaging-client:secret" \
+  "http://localhost:9000/oauth2/token" \
+  -d "grant_type=client_credentials&scope=message.read" \
+  -H "Content-Type: application/x-www-form-urlencoded"
 
-这个脚本将自动执行以下操作：
-- 测试客户端凭证授权流程
-- 提供授权码流程的操作指南
+# 使用获取的令牌访问API
+curl -X GET "http://localhost:8090/api/message" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
 
 ## 项目结构
 
@@ -104,56 +119,27 @@ api-provider-demo/
 │   │   └── resources/
 │   │       └── application.yml                                # 应用配置
 │   └── test/
-│       ├── java/
-│       │   └── com/
-│       │       └── example/
-│       │           └── api_provider_demo/
-│       │               └── AppTest.java                       # 测试类
-│       └── shell/
-│           └── oauth-test.sh                                  # OAuth2测试脚本
+│       └── java/
+│           └── com/
+│               └── example/
+│                   └── AppTest.java                           # 测试类
 └── pom.xml                                                    # Maven配置
 ```
 
-## OAuth2流程说明
+## JWT令牌验证
 
-### 客户端凭证授权流程
+资源服务器会验证JWT令牌的以下信息：
 
-适用于服务器到服务器的API访问：
+- 颁发者(issuer)是否是配置的授权服务器
+- 令牌是否在有效期内
+- 令牌是否包含必要的权限范围(scope)
+- 令牌签名是否有效
 
-1. 客户端使用客户端ID和密钥请求访问令牌：
-   ```bash
-   curl -X POST -u "messaging-client:secret" \
-     "http://localhost:9000/oauth2/token" \
-     -d "grant_type=client_credentials&scope=message.read" \
-     -H "Content-Type: application/x-www-form-urlencoded"
-   ```
+## 注意事项
 
-2. 使用获取的令牌访问API：
-   ```bash
-   curl -X GET "http://localhost:8090/api/message" \
-     -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-   ```
-
-### 授权码授权流程
-
-适用于用户授权的场景：
-
-1. 客户端将用户重定向到授权服务器进行登录和授权：
-   ```
-   http://localhost:9000/oauth2/authorize?response_type=code&client_id=messaging-client&scope=message.read&redirect_uri=http://127.0.0.1:8080/authorized
-   ```
-
-2. 用户授权后，使用授权码交换访问令牌：
-   ```bash
-   curl -X POST -u "messaging-client:secret" \
-     "http://localhost:9000/oauth2/token" \
-     -d "grant_type=authorization_code&code=YOUR_AUTHORIZATION_CODE&redirect_uri=http://127.0.0.1:8080/authorized" \
-     -H "Content-Type: application/x-www-form-urlencoded"
-   ```
-
-## 贡献指南
-
-欢迎提交问题和改进建议！
+- 确保授权服务器已启动并可访问
+- 在真实环境中使用HTTPS保护API通信
+- 适当配置CORS以支持来自不同源的客户端请求
 
 ## 许可证
 

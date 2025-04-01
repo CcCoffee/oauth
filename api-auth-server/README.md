@@ -1,6 +1,6 @@
 # OAuth2授权服务器
 
-这是一个基于Spring Authorization Server的OAuth2授权服务器演示项目，提供OAuth2认证和授权功能。
+这是一个基于Spring Authorization Server的OAuth2授权服务器演示项目，专注于提供客户端凭证授权流程支持。
 
 ## 项目架构
 
@@ -8,6 +8,7 @@
 
 - **授权服务器(api-auth-server)**：本项目，负责颁发和验证OAuth2令牌
 - **API提供者(api-provider-demo)**：资源服务器，提供受OAuth2保护的API资源
+- **API消费者(api-consumer-demo)**：客户端应用，使用客户端凭证访问API
 
 ### 技术栈
 
@@ -54,6 +55,15 @@ java -jar target/api-auth-server-0.0.1-SNAPSHOT.jar
 - **JWK集端点**: `/oauth2/jwks`
 - **OpenID Connect发现端点**: `/.well-known/openid-configuration`
 
+## 客户端凭证授权流程
+
+授权服务器支持客户端凭证授权流程，主要用于服务器到服务器的API访问：
+
+1. 客户端以自身名义（而非用户）请求访问令牌
+2. 授权服务器验证客户端凭证（ID和密钥）
+3. 验证通过后，授权服务器颁发访问令牌
+4. 客户端使用访问令牌访问受保护的API资源
+
 ## 预配置客户端
 
 授权服务器预配置了以下OAuth2客户端：
@@ -61,36 +71,22 @@ java -jar target/api-auth-server-0.0.1-SNAPSHOT.jar
 ```
 客户端ID: messaging-client
 客户端密钥: secret
-授权类型: authorization_code, refresh_token, client_credentials
-重定向URI: http://127.0.0.1:8080/login/oauth2/code/messaging-client-oidc, http://127.0.0.1:8080/authorized
-作用域: openid, profile, message.read, message.write
-```
-
-## 预配置用户
-
-```
-用户名: user
-密码: password
-角色: USER
+授权类型: client_credentials
+作用域: message.read
 ```
 
 ## 配置说明
 
-主要配置在`com.example.api_auth_server.config.AuthServerConfig`类中，定义了：
+主要配置在`com.example.api_auth_server.config.AuthServerConfig`类中，包括：
 
-- OAuth2授权服务器安全过滤器链
-- 默认安全过滤器链
-- 用户详情服务
-- 注册客户端仓库
-- JWK源和相关密钥配置
-- JWT解码器
-- 授权服务器设置
+- JWT令牌的签名密钥配置
+- 客户端凭证配置
+- 令牌有效期配置
+- 授权服务器安全设置
 
-## 测试
+## 测试令牌获取
 
-您可以使用项目`api-provider-demo`中的测试脚本进行测试，或使用以下命令：
-
-### 客户端凭证授权流程
+您可以使用以下命令测试客户端凭证授权流程：
 
 ```bash
 # 获取访问令牌
@@ -100,22 +96,16 @@ curl -X POST -u "messaging-client:secret" \
   -H "Content-Type: application/x-www-form-urlencoded"
 ```
 
-### 授权码授权流程
+## JWT令牌格式
 
-1. 在浏览器中访问：
-```
-http://localhost:9000/oauth2/authorize?response_type=code&client_id=messaging-client&scope=openid profile&redirect_uri=http://127.0.0.1:8080/authorized
-```
+授权服务器颁发的JWT令牌包含以下标准声明：
 
-2. 登录（user/password）并授权
-
-3. 获取授权码后，使用授权码交换访问令牌：
-```bash
-curl -X POST -u "messaging-client:secret" \
-  "http://localhost:9000/oauth2/token" \
-  -d "grant_type=authorization_code&code=YOUR_AUTHORIZATION_CODE&redirect_uri=http://127.0.0.1:8080/authorized" \
-  -H "Content-Type: application/x-www-form-urlencoded"
-```
+- `iss`：颁发者，值为授权服务器URL
+- `sub`：主题，值为客户端ID
+- `aud`：受众，值为资源服务器标识符
+- `exp`：过期时间
+- `iat`：颁发时间
+- `scope`：权限范围
 
 ## 项目结构
 
@@ -136,21 +126,16 @@ api-auth-server/
 │       └── java/
 │           └── com/
 │               └── example/
-│                   └── api_auth_server/
-│                       └── ApiAuthServerApplicationTests.java  # 测试类
-└── pom.xml                                                    # Maven配置
+│                   └── ApiAuthServerApplicationTests.java   # 测试类
+└── pom.xml                                                  # Maven配置
 ```
 
-## OAuth2和OpenID Connect支持
+## 安全注意事项
 
-本授权服务器支持：
-
-- OAuth2.0的所有标准授权类型
-- OpenID Connect 1.0
-
-## 贡献指南
-
-欢迎提交问题和改进建议！
+- 在生产环境中，应确保使用HTTPS保护所有通信
+- 客户端密钥应妥善保管，避免泄露
+- 适当设置令牌有效期，定期轮换密钥
+- 根据最小权限原则配置客户端权限范围
 
 ## 许可证
 

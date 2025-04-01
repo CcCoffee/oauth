@@ -1,13 +1,14 @@
 # OAuth2授权服务架构示例
 
-这是一个基于Spring Boot和Spring Security的OAuth2示例项目，展示了完整的OAuth2授权服务架构，包含授权服务器和资源服务器。
+这是一个基于Spring Boot和Spring Security的OAuth2示例项目，展示了完整的OAuth2授权服务架构。
 
 ## 项目结构
 
-本项目包含以下两个主要组件：
+本项目包含以下三个主要组件：
 
 - **[api-auth-server](api-auth-server/README.md)**: OAuth2授权服务器，负责身份验证和颁发访问令牌
 - **[api-provider-demo](api-provider-demo/README.md)**: OAuth2资源服务器，提供受保护的API资源
+- **[api-consumer-demo](api-consumer-demo/README.md)**: OAuth2客户端，演示如何获取令牌并访问受保护资源
 
 ## 技术栈
 
@@ -16,6 +17,7 @@
 - Spring Security
 - Spring Authorization Server
 - Spring OAuth2 Resource Server
+- Spring OAuth2 Client
 
 ## 快速开始
 
@@ -24,7 +26,9 @@
 - JDK 21+
 - Maven 3.6+
 
-### 启动授权服务器
+### 启动所有服务
+
+1. 首先启动授权服务器：
 
 ```bash
 cd api-auth-server
@@ -33,7 +37,7 @@ mvn spring-boot:run
 
 授权服务器将在端口9000上启动。
 
-### 启动资源服务器
+2. 然后启动资源服务器：
 
 ```bash
 cd api-provider-demo
@@ -42,42 +46,40 @@ mvn spring-boot:run
 
 资源服务器将在端口8090上启动。
 
-## 测试OAuth2流程
-
-项目中包含一个Shell脚本，可用于测试OAuth2流程：
+3. 最后启动客户端：
 
 ```bash
-cd api-provider-demo/src/test/shell
-chmod +x oauth-test.sh
-./oauth-test.sh
+cd api-consumer-demo
+mvn spring-boot:run
 ```
 
-这个脚本会执行以下操作：
-- 测试客户端凭证授权流程
-- 提供授权码授权流程的操作说明
+客户端将在端口8080上启动。
 
-## OAuth2授权流程
+## 测试API访问
 
-### 客户端凭证授权流程
+### 使用客户端凭证流程
 
-适用于服务器到服务器的通信：
+访问以下端点测试客户端凭证授权流程：
 
-1. 客户端使用ID和密钥获取访问令牌
-2. 使用访问令牌访问受保护的资源
+```
+http://localhost:8080/api/direct
+```
 
-### 授权码授权流程
+或
 
-适用于需要用户参与授权的场景：
+```
+http://localhost:8080/api/test
+```
 
-1. 用户被重定向到授权服务器并进行身份验证
-2. 用户授权应用程序访问其资源
-3. 授权服务器将授权码发送到客户端的重定向URI
-4. 客户端使用授权码交换访问令牌
-5. 客户端使用访问令牌访问受保护的资源
+### 使用基础信息
 
-## 预配置客户端和用户
+查看基本服务信息：
 
-授权服务器已预配置以下测试账户：
+```
+http://localhost:8080/api/info
+```
+
+## 预配置账户信息
 
 ```
 客户端ID: messaging-client
@@ -87,17 +89,11 @@ chmod +x oauth-test.sh
 密码: password
 ```
 
-## 服务器端点
+## 服务端口
 
-### 授权服务器 (端口9000)
-
-- **授权端点**: `/oauth2/authorize`
-- **令牌端点**: `/oauth2/token`
-- **JWT密钥集端点**: `/oauth2/jwks`
-
-### 资源服务器 (端口8090)
-
-- **示例API端点**: `/api/message`
+- 授权服务器: 9000
+- 资源服务器: 8090
+- 客户端: 8080
 
 ## 许可证
 
