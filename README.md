@@ -57,36 +57,62 @@ mvn spring-boot:run
 
 ## 测试API访问
 
-### 使用客户端凭证流程
+### 使用测试脚本
 
-访问以下端点测试客户端凭证授权流程：
+运行提供的测试脚本来验证所有功能：
 
-```
-http://localhost:8080/api/direct
-```
-
-或
-
-```
-http://localhost:8080/api/test
+```bash
+cd api-consumer-demo/src/test/shell
+./api-test.sh
 ```
 
-### 使用基础信息
+这个脚本会测试：
+1. API信息端点
+2. 直接API访问
+3. OAuth2不透明令牌端点
+4. OAuth2 JWT令牌端点
+5. 授权服务器令牌端点
 
-查看基本服务信息：
+### 手动测试端点
+
+或者手动访问以下端点：
 
 ```
-http://localhost:8080/api/info
+http://localhost:8080/api/opaque  # 使用不透明令牌访问
+http://localhost:8080/api/jwt     # 使用JWT令牌访问
+http://localhost:8080/api/info    # 查看服务信息
 ```
 
-## 预配置账户信息
+## 预配置客户端
 
+系统预配置了以下OAuth2客户端：
+
+### 不透明令牌客户端
 ```
-客户端ID: messaging-client
+客户端ID: opaque-client
+客户端密钥: opaque-secret
+授权类型: client_credentials
+作用域: message.read
+令牌格式: 不透明令牌
+有效期: 30分钟
+```
+
+### JWT令牌客户端
+```
+客户端ID: jwt-client
+客户端密钥: jwt-secret
+授权类型: client_credentials
+作用域: message.read
+令牌格式: JWT
+有效期: 1小时
+```
+
+### 资源服务器客户端
+```
+客户端ID: resource-server
 客户端密钥: secret
-
-用户名: user
-密码: password
+用途: 令牌内省
+作用域: introspection
 ```
 
 ## 服务端口

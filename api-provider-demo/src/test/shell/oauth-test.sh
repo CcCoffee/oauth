@@ -12,8 +12,6 @@ OPAQUE_CLIENT_SECRET="opaque-secret"
 JWT_CLIENT_ID="jwt-client"
 JWT_CLIENT_SECRET="jwt-secret"
 
-REDIRECT_URI="http://127.0.0.1:8080/authorized"
-
 # 彩色输出函数
 print_info() {
   echo -e "\033[36m[信息]\033[0m $1"
