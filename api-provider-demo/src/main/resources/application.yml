@@ -9,6 +9,11 @@ spring:
           issuer-uri: http://localhost:9000
           jwk-set-uri: http://localhost:9000/oauth2/jwks
         opaquetoken:
+          # 资源服务器在进行令牌内省时，不需要在配置中指定scope，因为：
+          # scope是客户端被允许请求的权限范围，已经在授权服务器中为该客户端(resource-server)配置好了
+          # 当资源服务器进行内省请求时，它只是在验证一个令牌，而不是请求新的访问权限
+          # 内省过程是使用基本认证(Basic Authentication)发送客户端凭据，然后发送令牌进行验证
+          # Spring Security的OAuth2资源服务器模块会自动处理这个过程，无需在资源服务器配置中显式指定scope。scope的配置只需要在授权服务器端完成即可。
           introspection-uri: http://localhost:9000/oauth2/introspect
           client-id: resource-server
           client-secret: secret

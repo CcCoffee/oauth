@@ -75,6 +75,27 @@ spring:
           client-secret: secret
 ```
 
+注意，API提供者的配置中**不需要指定scope**，这是因为：
+
+1. scope是在授权服务器端为客户端配置的权限范围，在资源服务器的内省配置中无需重复指定
+2. 当资源服务器进行内省请求时，它只是在验证一个令牌的有效性，而不是请求新的访问权限
+3. 内省过程是使用基本认证(Basic Authentication)发送客户端凭据，然后发送令牌进行验证
+4. Spring Security的OAuth2资源服务器模块会自动处理这个内省过程，无需在配置中显式指定scope
+
+而在授权服务器端，内省客户端的scope通常设置为`introspection`：
+
+```java
+RegisteredClient resourceServer = RegisteredClient.withId(UUID.randomUUID().toString())
+        .clientId("resource-server")
+        .clientSecret("{noop}secret")
+        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+        .scope("introspection")  // 内省权限
+        .build();
+```
+
+这个`introspection` scope并非OAuth2规范强制要求的，而是一种广泛接受的最佳实践命名约定，可以根据项目需要进行自定义。
+
 ### 安全最佳实践
 
 1. **职责分离**：使用专门的客户端（resource-server）进行令牌内省，而不是使用获取令牌的客户端（opaque-client）
