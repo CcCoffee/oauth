@@ -10,6 +10,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.StandardPasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -67,7 +69,12 @@ public class AuthServerConfig {
     }
 
     @Bean
-    public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
+    public PasswordEncoder passwordEncoder() {
+        return new StandardPasswordEncoder();
+    }
+
+    @Bean
+    public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder) {
         JdbcRegisteredClientRepository registeredClientRepository = new JdbcRegisteredClientRepository(jdbcTemplate);
 
         try {
@@ -75,7 +82,7 @@ public class AuthServerConfig {
             if (registeredClientRepository.findByClientId("opaque-client") == null) {
                 RegisteredClient opaqueClient = RegisteredClient.withId(UUID.randomUUID().toString())
                         .clientId("opaque-client")
-                        .clientSecret("{noop}opaque-secret")
+                        .clientSecret(passwordEncoder.encode("opaque-secret"))
                         .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                         .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                         .scope("message.read")
@@ -91,7 +98,7 @@ public class AuthServerConfig {
             if (registeredClientRepository.findByClientId("jwt-client") == null) {
                 RegisteredClient jwtClient = RegisteredClient.withId(UUID.randomUUID().toString())
                         .clientId("jwt-client")
-                        .clientSecret("{noop}jwt-secret")
+                        .clientSecret(passwordEncoder.encode("jwt-secret"))
                         .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                         .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                         .scope("message.read")
@@ -107,7 +114,7 @@ public class AuthServerConfig {
             if (registeredClientRepository.findByClientId("resource-server") == null) {
                 RegisteredClient resourceServer = RegisteredClient.withId(UUID.randomUUID().toString())
                         .clientId("resource-server")
-                        .clientSecret("{noop}secret")
+                        .clientSecret(passwordEncoder.encode("secret"))
                         .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                         .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                         // 关于内省客户端的scope设置，这不是强制固定为"introspection"的，但这是一种广泛接受的最佳实践。
