@@ -69,10 +69,11 @@ test_client_credentials() {
   
   # 显示令牌的前20个字符
   TOKEN_PREVIEW="${ACCESS_TOKEN:0:20}..."
-  print_info "访问令牌 (部分): $TOKEN_PREVIEW"
+#  print_info "访问令牌 (部分): $TOKEN_PREVIEW"
+  print_info "访问令牌 : $ACCESS_TOKEN"
 
   echo ""
-  print_info "正在使用访问令牌访问受保护的API..."
+#  print_info "正在使用访问令牌访问受保护的API..."
   
   # 访问受保护的API
   API_RESPONSE=$(curl -s -X GET \
@@ -85,8 +86,8 @@ test_client_credentials() {
     return 1
   fi
 
-  print_success "成功访问受保护的API！响应内容："
-  echo "$API_RESPONSE" | jq .
+#  print_success "成功访问受保护的API！响应内容："
+#  echo "$API_RESPONSE" | jq .
   
   return 0
 }
@@ -146,9 +147,9 @@ main() {
   echo ""
   # 运行客户端凭证流程测试
   test_client_credentials
-  
+  test_client_credentials
   # 显示授权码流程说明
-  show_authorization_code_instructions
+#  show_authorization_code_instructions
 }
 
 # 执行主函数

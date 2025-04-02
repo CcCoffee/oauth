@@ -13,18 +13,23 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
+import org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.web.SecurityFilterChain;
 
 import com.example.api_auth_server.service.JdbcJwkService;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 
 @Configuration
 @EnableWebSecurity
@@ -72,8 +77,9 @@ public class AuthServerConfig {
                         .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                         .scope("message.read")
                         .tokenSettings(TokenSettings.builder()
-                                // 将访问令牌有效期设置为1小时
-                                .accessTokenTimeToLive(Duration.ofHours(1))
+                                // 将访问令牌有效期设置为2分钟
+                                .accessTokenTimeToLive(Duration.ofMinutes(2))
+                                .accessTokenFormat(OAuth2TokenFormat.REFERENCE)
                                 .build())
                         .build();
                 registeredClientRepository.save(registeredClient);
@@ -100,5 +106,17 @@ public class AuthServerConfig {
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder().build();
+    }
+
+    @Bean
+    public OAuth2TokenGenerator<?> tokenGenerator() {
+        UUIDAuth2TokenGenerator uuidAuth2TokenGenerator = new UUIDAuth2TokenGenerator();
+        return new DelegatingOAuth2TokenGenerator(uuidAuth2TokenGenerator);
+    }
+
+    @Bean
+    public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate, 
+            RegisteredClientRepository registeredClientRepository) {
+        return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
     }
 } 
