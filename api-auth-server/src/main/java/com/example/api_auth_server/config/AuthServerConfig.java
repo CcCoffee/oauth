@@ -24,7 +24,6 @@ import org.springframework.security.oauth2.server.authorization.settings.OAuth2T
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
 import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2AccessTokenGenerator;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -32,8 +31,6 @@ import com.example.api_auth_server.service.JdbcJwkService;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
-import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenContext;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
@@ -83,7 +80,7 @@ public class AuthServerConfig {
                         .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                         .scope("message.read")
                         .tokenSettings(TokenSettings.builder()
-                                .accessTokenTimeToLive(Duration.ofMinutes(30))
+                                .accessTokenTimeToLive(Duration.ofDays(365)) // 有效期 365 天
                                 .accessTokenFormat(OAuth2TokenFormat.REFERENCE)
                                 .build())
                         .build();
@@ -99,7 +96,7 @@ public class AuthServerConfig {
                         .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                         .scope("message.read")
                         .tokenSettings(TokenSettings.builder()
-                                .accessTokenTimeToLive(Duration.ofHours(1))
+                                .accessTokenTimeToLive(Duration.ofHours(24)) // 有效期 24 小时
                                 .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
                                 .build())
                         .build();
@@ -145,12 +142,10 @@ public class AuthServerConfig {
     public OAuth2TokenGenerator<?> tokenGenerator(JWKSource<SecurityContext> jwkSource) {
         JwtEncoder jwtEncoder = new NimbusJwtEncoder(jwkSource);
         JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder);
-        OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();
         UUIDAuth2TokenGenerator uuidAuth2TokenGenerator = new UUIDAuth2TokenGenerator();
         
         return new DelegatingOAuth2TokenGenerator(
             jwtGenerator,
-            accessTokenGenerator,
             uuidAuth2TokenGenerator
         );
     }

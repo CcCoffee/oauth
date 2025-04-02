@@ -22,9 +22,7 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
-                .opaqueToken(opaque -> opaque
-                    .introspectionUri("http://localhost:9000/oauth2/introspect")
-                    .introspectionClientCredentials("resource-server", "secret"))
+                .opaqueToken(Customizer.withDefaults())
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
