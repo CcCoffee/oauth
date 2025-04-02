@@ -1,5 +1,8 @@
 -- OAuth2 Authorization Schema
 
+-- 对于标准的client credentials 认证，只需要 oauth2_registered_client 和 oauth2_jwt_keys 表。如果需要额外启用 refresh token 时，才需要 oauth2_authorization 表
+-- 对于机器到机器通信场景中不推介启用 refresh token
+
 -- 注册客户端表
 CREATE TABLE IF NOT EXISTS oauth2_registered_client (
     id VARCHAR(100) NOT NULL,
