@@ -49,16 +49,37 @@ java -jar target/api-provider-demo-0.0.1-SNAPSHOT.jar
 
 项目提供以下API端点：
 
-- **GET /api/message**：返回一个受保护的消息资源，需要有效的OAuth2令牌
+### 不透明令牌端点
+- **GET /api/opaque/message**：使用不透明令牌保护的API端点
+- 需要有效的不透明访问令牌
+- 返回令牌属性信息和消息
+
+### JWT令牌端点
+- **GET /api/jwt/message**：使用JWT令牌保护的API端点
+- 需要有效的JWT访问令牌
+- 返回JWT声明信息和消息
 
 ## 安全配置
 
-资源服务器配置为：
+资源服务器配置了两种安全机制：
 
-- 仅对`/api/**`路径下的资源进行访问控制
-- 要求请求中必须包含有效的JWT令牌
-- 使用无状态（stateless）会话管理
-- 禁用CSRF保护，适合REST API
+### 不透明令牌配置
+```java
+.securityMatcher("/api/opaque/**")
+.oauth2ResourceServer(oauth2 -> oauth2
+    .opaqueToken(opaque -> opaque
+        .introspectionUri("http://localhost:9000/oauth2/introspect")
+        .introspectionClientCredentials("resource-server", "secret"))
+)
+```
+
+### JWT令牌配置
+```java
+.securityMatcher("/api/jwt/**")
+.oauth2ResourceServer(oauth2 -> oauth2
+    .jwt(Customizer.withDefaults())
+)
+```
 
 ## 配置说明
 
@@ -78,26 +99,47 @@ spring:
 
 ## 客户端凭证流程
 
-API提供者支持客户端凭证授权流程：
+API提供者支持两种令牌验证流程：
 
-1. 客户端使用预配置的凭证从授权服务器获取JWT令牌
-2. 客户端在请求API时在Authorization头中包含该令牌
-3. 资源服务器验证JWT令牌的有效性和权限
-4. 验证通过后，资源服务器处理请求并返回数据
+### 不透明令牌流程
+1. 客户端携带不透明令牌访问API
+2. 资源服务器使用`resource-server`凭证调用内省端点
+3. 授权服务器验证令牌并返回令牌信息
+4. 资源服务器验证权限并处理请求
+
+### JWT令牌流程
+1. 客户端携带JWT令牌访问API
+2. 资源服务器使用公钥验证JWT签名
+3. 资源服务器验证JWT声明（过期时间、作用域等）
+4. 验证通过后处理请求
 
 ## 测试API
 
 您可以使用curl命令测试API端点：
 
+### 测试不透明令牌端点
 ```bash
-# 首先从授权服务器获取访问令牌
-curl -X POST -u "messaging-client:secret" \
+# 首先获取不透明访问令牌
+curl -X POST -u "opaque-client:opaque-secret" \
   "http://localhost:9000/oauth2/token" \
   -d "grant_type=client_credentials&scope=message.read" \
   -H "Content-Type: application/x-www-form-urlencoded"
 
 # 使用获取的令牌访问API
-curl -X GET "http://localhost:8090/api/message" \
+curl -X GET "http://localhost:8090/api/opaque/message" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+### 测试JWT令牌端点
+```bash
+# 首先获取JWT访问令牌
+curl -X POST -u "jwt-client:jwt-secret" \
+  "http://localhost:9000/oauth2/token" \
+  -d "grant_type=client_credentials&scope=message.read" \
+  -H "Content-Type: application/x-www-form-urlencoded"
+
+# 使用获取的令牌访问API
+curl -X GET "http://localhost:8090/api/jwt/message" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
@@ -126,20 +168,28 @@ api-provider-demo/
 └── pom.xml                                                    # Maven配置
 ```
 
-## JWT令牌验证
+## 令牌验证
 
-资源服务器会验证JWT令牌的以下信息：
+资源服务器会验证令牌的以下信息：
 
-- 颁发者(issuer)是否是配置的授权服务器
+### 不透明令牌验证
+- 令牌是否处于活动状态（active）
 - 令牌是否在有效期内
-- 令牌是否包含必要的权限范围(scope)
+- 令牌是否具有所需的作用域
+- 令牌的客户端ID是否正确
+
+### JWT令牌验证
 - 令牌签名是否有效
+- 颁发者(issuer)是否正确
+- 令牌是否在有效期内
+- 令牌是否包含必要的作用域(scope)
 
 ## 注意事项
 
 - 确保授权服务器已启动并可访问
-- 在真实环境中使用HTTPS保护API通信
+- 在生产环境中使用HTTPS保护API通信
 - 适当配置CORS以支持来自不同源的客户端请求
+- 定期更新JWT签名密钥
 
 ## 许可证
 

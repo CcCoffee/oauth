@@ -69,11 +69,32 @@ java -jar target/api-auth-server-0.0.1-SNAPSHOT.jar
 
 授权服务器预配置了以下OAuth2客户端：
 
+### 不透明令牌客户端
 ```
-客户端ID: messaging-client
-客户端密钥: secret
+客户端ID: opaque-client
+客户端密钥: opaque-secret
 授权类型: client_credentials
 作用域: message.read
+令牌格式: 不透明令牌
+有效期: 30分钟
+```
+
+### JWT令牌客户端
+```
+客户端ID: jwt-client
+客户端密钥: jwt-secret
+授权类型: client_credentials
+作用域: message.read
+令牌格式: JWT
+有效期: 1小时
+```
+
+### 资源服务器客户端
+```
+客户端ID: resource-server
+客户端密钥: secret
+用途: 令牌内省
+作用域: introspection
 ```
 
 ## 集群部署指南
@@ -127,12 +148,21 @@ spring:
 
 您可以使用以下命令测试客户端凭证授权流程：
 
+### 获取不透明令牌
 ```bash
-# 获取访问令牌
 curl -X POST \
   http://localhost:9000/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -H "Authorization: Basic bWVzc2FnaW5nLWNsaWVudDpzZWNyZXQ=" \
+  -H "Authorization: Basic $(echo -n 'opaque-client:opaque-secret' | base64)" \
+  -d "grant_type=client_credentials&scope=message.read"
+```
+
+### 获取JWT令牌
+```bash
+curl -X POST \
+  http://localhost:9000/oauth2/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -H "Authorization: Basic $(echo -n 'jwt-client:jwt-secret' | base64)" \
   -d "grant_type=client_credentials&scope=message.read"
 ```
 
