@@ -7,6 +7,11 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:9000
+          jwk-set-uri: http://localhost:9000/oauth2/jwks
+        opaquetoken:
+          introspection-uri: http://localhost:9000/oauth2/introspect
+          client-id: resource-server
+          client-secret: secret
 
 logging:
   level:

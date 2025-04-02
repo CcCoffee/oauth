@@ -4,8 +4,14 @@
 API_CONSUMER_URL="http://localhost:8080"
 AUTH_SERVER_URL="http://localhost:9000"
 API_PROVIDER_URL="http://localhost:8090"
-CLIENT_ID="messaging-client"
-CLIENT_SECRET="secret"
+
+# 不透明令牌客户端配置
+OPAQUE_CLIENT_ID="opaque-client"
+OPAQUE_CLIENT_SECRET="opaque-secret"
+
+# JWT令牌客户端配置
+JWT_CLIENT_ID="jwt-client"
+JWT_CLIENT_SECRET="jwt-secret"
 
 # 彩色输出函数
 print_info() {
@@ -83,12 +89,12 @@ test_direct_api() {
   return 0
 }
 
-# 测试客户端凭证授权API端点
-test_oauth2_api() {
-  print_info "3. 测试OAuth2客户端凭证授权API端点"
+# 测试OAuth2客户端凭证授权API端点（使用不透明令牌）
+test_oauth2_opaque_api() {
+  print_info "3. 测试OAuth2客户端凭证授权API端点（不透明令牌）"
   
   # 访问OAuth2 API端点
-  OAUTH2_API_RESPONSE=$(curl -s -X GET "${API_CONSUMER_URL}/api/test")
+  OAUTH2_API_RESPONSE=$(curl -s -X GET "${API_CONSUMER_URL}/api/opaque")
   
   # 检查是否成功获取响应
   if [ -z "$OAUTH2_API_RESPONSE" ]; then
@@ -103,7 +109,34 @@ test_oauth2_api() {
     return 1
   fi
   
-  print_success "已成功访问OAuth2 API端点！"
+  print_success "已成功访问OAuth2 API端点（不透明令牌）！"
+  echo "$OAUTH2_API_RESPONSE" | jq .
+  echo ""
+  
+  return 0
+}
+
+# 测试OAuth2客户端凭证授权API端点（使用JWT令牌）
+test_oauth2_jwt_api() {
+  print_info "4. 测试OAuth2客户端凭证授权API端点（JWT令牌）"
+  
+  # 访问OAuth2 API端点
+  OAUTH2_API_RESPONSE=$(curl -s -X GET "${API_CONSUMER_URL}/api/jwt")
+  
+  # 检查是否成功获取响应
+  if [ -z "$OAUTH2_API_RESPONSE" ]; then
+    print_error "访问OAuth2 API端点失败，请确保API消费者、授权服务器和API提供者都正在运行。"
+    return 1
+  fi
+  
+  # 检查响应是否包含错误信息
+  if echo "$OAUTH2_API_RESPONSE" | jq -e 'has("error")' > /dev/null; then
+    print_error "访问OAuth2 API端点返回错误："
+    echo "$OAUTH2_API_RESPONSE" | jq .
+    return 1
+  fi
+  
+  print_success "已成功访问OAuth2 API端点（JWT令牌）！"
   echo "$OAUTH2_API_RESPONSE" | jq .
   echo ""
   
@@ -112,11 +145,11 @@ test_oauth2_api() {
 
 # 直接测试授权服务器令牌端点
 test_auth_server_token() {
-  print_info "4. 直接测试授权服务器令牌端点"
+  print_info "5. 直接测试授权服务器令牌端点"
   print_info "正在从授权服务器获取访问令牌..."
 
   # 获取访问令牌
-  ACCESS_TOKEN_RESPONSE=$(curl -s -X POST -u "${CLIENT_ID}:${CLIENT_SECRET}" \
+  ACCESS_TOKEN_RESPONSE=$(curl -s -X POST -u "${OPAQUE_CLIENT_ID}:${OPAQUE_CLIENT_SECRET}" \
     "${AUTH_SERVER_URL}/oauth2/token" \
     -d "grant_type=client_credentials&scope=message.read" \
     -H "Content-Type: application/x-www-form-urlencoded")
@@ -150,7 +183,7 @@ test_auth_server_token() {
   
   # 直接访问API提供者
   PROVIDER_API_RESPONSE=$(curl -s -X GET \
-    "${API_PROVIDER_URL}/api/message" \
+    "${API_PROVIDER_URL}/api/opaque/message" \
     -H "Authorization: Bearer ${ACCESS_TOKEN}")
 
   # 检查API响应
@@ -199,7 +232,8 @@ main() {
   # 运行测试
   test_api_info
   test_direct_api
-  test_oauth2_api
+  test_oauth2_opaque_api
+  test_oauth2_jwt_api
   test_auth_server_token
   
   # 显示完成信息

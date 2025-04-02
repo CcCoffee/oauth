@@ -23,6 +23,8 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 import org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2AccessTokenGenerator;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -30,6 +32,10 @@ import com.example.api_auth_server.service.JdbcJwkService;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenContext;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
 @Configuration
 @EnableWebSecurity
@@ -45,10 +51,11 @@ public class AuthServerConfig {
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
         OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
-        http.getConfigurer(OAuth2AuthorizationServerConfigurer.class);
-        http
-                .oauth2ResourceServer((resourceServer) -> resourceServer
-                        .jwt(Customizer.withDefaults()));
+        http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
+            .tokenIntrospectionEndpoint(Customizer.withDefaults())
+            .oidc(Customizer.withDefaults());
+        http.oauth2ResourceServer(resourceServer -> resourceServer
+            .jwt(Customizer.withDefaults()));
         return http.build();
     }
 
@@ -64,29 +71,55 @@ public class AuthServerConfig {
 
     @Bean
     public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
-        // 初始化JdbcRegisteredClientRepository
         JdbcRegisteredClientRepository registeredClientRepository = new JdbcRegisteredClientRepository(jdbcTemplate);
 
-        // 检查客户端是否已存在，如果不存在则创建
         try {
-            if (registeredClientRepository.findByClientId("messaging-client") == null) {
-                RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                        .clientId("messaging-client")
-                        .clientSecret("{noop}secret")
+            // 不透明令牌客户端
+            if (registeredClientRepository.findByClientId("opaque-client") == null) {
+                RegisteredClient opaqueClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                        .clientId("opaque-client")
+                        .clientSecret("{noop}opaque-secret")
                         .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                         .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                         .scope("message.read")
                         .tokenSettings(TokenSettings.builder()
-                                // 将访问令牌有效期设置为2分钟
-                                .accessTokenTimeToLive(Duration.ofMinutes(2))
+                                .accessTokenTimeToLive(Duration.ofMinutes(30))
                                 .accessTokenFormat(OAuth2TokenFormat.REFERENCE)
                                 .build())
                         .build();
-                registeredClientRepository.save(registeredClient);
+                registeredClientRepository.save(opaqueClient);
+            }
+
+            // JWT令牌客户端
+            if (registeredClientRepository.findByClientId("jwt-client") == null) {
+                RegisteredClient jwtClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                        .clientId("jwt-client")
+                        .clientSecret("{noop}jwt-secret")
+                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                        .scope("message.read")
+                        .tokenSettings(TokenSettings.builder()
+                                .accessTokenTimeToLive(Duration.ofHours(1))
+                                .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
+                                .build())
+                        .build();
+                registeredClientRepository.save(jwtClient);
+            }
+
+            // 资源服务器客户端（用于令牌内省）
+            if (registeredClientRepository.findByClientId("resource-server") == null) {
+                RegisteredClient resourceServer = RegisteredClient.withId(UUID.randomUUID().toString())
+                        .clientId("resource-server")
+                        .clientSecret("{noop}secret")
+                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                        .scope("introspection")
+                        .build();
+                registeredClientRepository.save(resourceServer);
             }
         } catch (Exception e) {
-            // 表可能还未创建，首次启动时可能会出错
-            // 我们会在下面提供初始化SQL脚本
+            // 处理异常
+            e.printStackTrace();
         }
 
         return registeredClientRepository;
@@ -109,9 +142,17 @@ public class AuthServerConfig {
     }
 
     @Bean
-    public OAuth2TokenGenerator<?> tokenGenerator() {
+    public OAuth2TokenGenerator<?> tokenGenerator(JWKSource<SecurityContext> jwkSource) {
+        JwtEncoder jwtEncoder = new NimbusJwtEncoder(jwkSource);
+        JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder);
+        OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();
         UUIDAuth2TokenGenerator uuidAuth2TokenGenerator = new UUIDAuth2TokenGenerator();
-        return new DelegatingOAuth2TokenGenerator(uuidAuth2TokenGenerator);
+        
+        return new DelegatingOAuth2TokenGenerator(
+            jwtGenerator,
+            accessTokenGenerator,
+            uuidAuth2TokenGenerator
+        );
     }
 
     @Bean

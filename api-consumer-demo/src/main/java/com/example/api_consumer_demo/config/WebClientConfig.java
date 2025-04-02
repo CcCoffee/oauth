@@ -18,12 +18,23 @@ import reactor.core.publisher.Mono;
 public class WebClientConfig {
 
     @Bean
-    public WebClient webClient(OAuth2AuthorizedClientManager authorizedClientManager) {
+    public WebClient opaqueTokenWebClient(OAuth2AuthorizedClientManager authorizedClientManager) {
         ServletOAuth2AuthorizedClientExchangeFilterFunction oauth2Client =
                 new ServletOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
+        oauth2Client.setDefaultClientRegistrationId("opaque-client");
         
-        // 设置默认的OAuth2授权客户端
-        oauth2Client.setDefaultClientRegistrationId("messaging-client-credentials");
+        return WebClient.builder()
+                .baseUrl("http://localhost:8090")
+                .filter(oauth2Client)
+                .filter(logRequest())
+                .build();
+    }
+
+    @Bean
+    public WebClient jwtTokenWebClient(OAuth2AuthorizedClientManager authorizedClientManager) {
+        ServletOAuth2AuthorizedClientExchangeFilterFunction oauth2Client =
+                new ServletOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
+        oauth2Client.setDefaultClientRegistrationId("jwt-client");
         
         return WebClient.builder()
                 .baseUrl("http://localhost:8090")

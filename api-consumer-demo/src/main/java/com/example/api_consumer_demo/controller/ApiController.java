@@ -24,11 +24,31 @@ public class ApiController {
         this.apiService = apiService;
     }
 
-    @GetMapping("/test")
-    public ResponseEntity<?> test(@RegisteredOAuth2AuthorizedClient("messaging-client-credentials") 
+    @GetMapping("/opaque")
+    public ResponseEntity<?> testOpaque(@RegisteredOAuth2AuthorizedClient("opaque-client") 
                                       OAuth2AuthorizedClient authorizedClient) {
         try {
-            Map<String, Object> result = apiService.getMessageWithClientCredentials(authorizedClient);
+            Map<String, Object> result = apiService.getMessageWithOpaqueToken(authorizedClient);
+            return ResponseEntity.ok(result);
+        } catch (WebClientResponseException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "API调用失败");
+            errorResponse.put("status", e.getStatusCode().value());
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(e.getStatusCode()).body(errorResponse);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "内部服务器错误");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
+
+    @GetMapping("/jwt")
+    public ResponseEntity<?> testJwt(@RegisteredOAuth2AuthorizedClient("jwt-client") 
+                                      OAuth2AuthorizedClient authorizedClient) {
+        try {
+            Map<String, Object> result = apiService.getMessageWithJwtToken(authorizedClient);
             return ResponseEntity.ok(result);
         } catch (WebClientResponseException e) {
             Map<String, Object> errorResponse = new HashMap<>();

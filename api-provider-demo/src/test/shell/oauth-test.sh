@@ -3,8 +3,15 @@
 # 环境变量设置
 AUTH_SERVER_URL="http://localhost:9000"
 API_PROVIDER_URL="http://localhost:8090"
-CLIENT_ID="messaging-client"
-CLIENT_SECRET="secret"
+
+# 不透明令牌客户端配置
+OPAQUE_CLIENT_ID="opaque-client"
+OPAQUE_CLIENT_SECRET="opaque-secret"
+
+# JWT令牌客户端配置
+JWT_CLIENT_ID="jwt-client"
+JWT_CLIENT_SECRET="jwt-secret"
+
 REDIRECT_URI="http://127.0.0.1:8080/authorized"
 
 # 彩色输出函数
@@ -36,13 +43,13 @@ print_info "OAuth2.0测试脚本 - 测试授权服务器和API提供者"
 print_separator
 echo ""
 
-# 1. 客户端凭证授权流程
-test_client_credentials() {
-  print_info "1. 测试客户端凭证授权流程"
-  print_info "正在从授权服务器获取访问令牌..."
+# 1. 测试不透明令牌客户端凭证授权流程
+test_opaque_client_credentials() {
+  print_info "1. 测试不透明令牌客户端凭证授权流程"
+  print_info "正在从授权服务器获取不透明访问令牌..."
 
   # 获取访问令牌
-  ACCESS_TOKEN_RESPONSE=$(curl -s -X POST -u "${CLIENT_ID}:${CLIENT_SECRET}" \
+  ACCESS_TOKEN_RESPONSE=$(curl -s -X POST -u "${OPAQUE_CLIENT_ID}:${OPAQUE_CLIENT_SECRET}" \
     "${AUTH_SERVER_URL}/oauth2/token" \
     -d "grant_type=client_credentials&scope=message.read" \
     -H "Content-Type: application/x-www-form-urlencoded")
@@ -62,22 +69,21 @@ test_client_credentials() {
     return 1
   fi
 
-  print_success "已获取访问令牌！"
+  print_success "已获取不透明访问令牌！"
   print_info "令牌类型: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.token_type')"
   print_info "有效期: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.expires_in') 秒"
   print_info "作用域: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.scope')"
   
   # 显示令牌的前20个字符
   TOKEN_PREVIEW="${ACCESS_TOKEN:0:20}..."
-#  print_info "访问令牌 (部分): $TOKEN_PREVIEW"
-  print_info "访问令牌 : $ACCESS_TOKEN"
+  print_info "访问令牌 (部分): $TOKEN_PREVIEW"
 
   echo ""
-#  print_info "正在使用访问令牌访问受保护的API..."
+  print_info "正在使用不透明访问令牌访问受保护的API..."
   
   # 访问受保护的API
   API_RESPONSE=$(curl -s -X GET \
-    "${API_PROVIDER_URL}/api/message" \
+    "${API_PROVIDER_URL}/api/opaque/message" \
     -H "Authorization: Bearer ${ACCESS_TOKEN}")
 
   # 检查API响应
@@ -86,42 +92,67 @@ test_client_credentials() {
     return 1
   fi
 
-#  print_success "成功访问受保护的API！响应内容："
-#  echo "$API_RESPONSE" | jq .
+  print_success "成功使用不透明令牌访问受保护的API！响应内容："
+  echo "$API_RESPONSE" | jq .
+  echo ""
   
   return 0
 }
 
-# 2. 授权码授权流程的说明（无法在脚本中完全自动化）
-show_authorization_code_instructions() {
-  print_separator
-  print_info "2. 授权码授权流程说明"
-  print_separator
+# 2. 测试JWT令牌客户端凭证授权流程
+test_jwt_client_credentials() {
+  print_info "2. 测试JWT令牌客户端凭证授权流程"
+  print_info "正在从授权服务器获取JWT访问令牌..."
+
+  # 获取访问令牌
+  ACCESS_TOKEN_RESPONSE=$(curl -s -X POST -u "${JWT_CLIENT_ID}:${JWT_CLIENT_SECRET}" \
+    "${AUTH_SERVER_URL}/oauth2/token" \
+    -d "grant_type=client_credentials&scope=message.read" \
+    -H "Content-Type: application/x-www-form-urlencoded")
+
+  # 检查是否成功获取令牌
+  if [ -z "$ACCESS_TOKEN_RESPONSE" ]; then
+    print_error "获取令牌失败，请确保授权服务器正在运行。"
+    return 1
+  fi
+
+  # 提取令牌
+  ACCESS_TOKEN=$(echo $ACCESS_TOKEN_RESPONSE | jq -r '.access_token')
   
-  AUTH_URL="${AUTH_SERVER_URL}/oauth2/authorize?response_type=code&client_id=${CLIENT_ID}&scope=message.read%20openid&redirect_uri=${REDIRECT_URI}"
+  if [ "$ACCESS_TOKEN" == "null" ] || [ -z "$ACCESS_TOKEN" ]; then
+    print_error "获取令牌失败，响应内容："
+    echo $ACCESS_TOKEN_RESPONSE | jq .
+    return 1
+  fi
+
+  print_success "已获取JWT访问令牌！"
+  print_info "令牌类型: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.token_type')"
+  print_info "有效期: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.expires_in') 秒"
+  print_info "作用域: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.scope')"
   
+  # 显示令牌的前20个字符
+  TOKEN_PREVIEW="${ACCESS_TOKEN:0:20}..."
+  print_info "访问令牌 (部分): $TOKEN_PREVIEW"
+
   echo ""
-  print_info "授权码流程需要用户交互，无法在此脚本中完全自动化。请按照以下步骤手动操作："
+  print_info "正在使用JWT访问令牌访问受保护的API..."
+  
+  # 访问受保护的API
+  API_RESPONSE=$(curl -s -X GET \
+    "${API_PROVIDER_URL}/api/jwt/message" \
+    -H "Authorization: Bearer ${ACCESS_TOKEN}")
+
+  # 检查API响应
+  if [ -z "$API_RESPONSE" ]; then
+    print_error "访问API失败，请确保API提供者正在运行。"
+    return 1
+  fi
+
+  print_success "成功使用JWT令牌访问受保护的API！响应内容："
+  echo "$API_RESPONSE" | jq .
   echo ""
-  print_info "步骤 1: 在浏览器中打开以下URL获取授权码"
-  echo "$AUTH_URL"
-  echo ""
-  print_info "步骤 2: 登录并授权应用访问"
-  print_info "用户名: user"
-  print_info "密码: password"
-  echo ""
-  print_info "步骤 3: 授权后，您将被重定向到类似的URL:"
-  echo "${REDIRECT_URI}?code=YOUR_AUTHORIZATION_CODE"
-  echo ""
-  print_info "步骤 4: 复制code参数的值，然后运行以下命令获取访问令牌:"
-  echo "curl -X POST -u \"${CLIENT_ID}:${CLIENT_SECRET}\" \\"
-  echo "  \"${AUTH_SERVER_URL}/oauth2/token\" \\"
-  echo "  -d \"grant_type=authorization_code&code=YOUR_AUTHORIZATION_CODE&redirect_uri=${REDIRECT_URI}\" \\"
-  echo "  -H \"Content-Type: application/x-www-form-urlencoded\""
-  echo ""
-  print_info "步骤 5: 使用获取的access_token访问API:"
-  echo "curl -X GET \"${API_PROVIDER_URL}/api/message\" -H \"Authorization: Bearer YOUR_ACCESS_TOKEN\""
-  echo ""
+  
+  return 0
 }
 
 # 主函数
@@ -146,10 +177,13 @@ main() {
 
   echo ""
   # 运行客户端凭证流程测试
-  test_client_credentials
-  test_client_credentials
-  # 显示授权码流程说明
-#  show_authorization_code_instructions
+  test_opaque_client_credentials
+  test_jwt_client_credentials
+  
+  # 显示完成信息
+  print_separator
+  print_success "测试完成！"
+  print_separator
 }
 
 # 执行主函数
