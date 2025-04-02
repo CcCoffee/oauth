@@ -1,10 +1,10 @@
 -- OAuth2初始化数据脚本（init.sql）
 
 -- 清理现有测试数据（可选）
-DELETE FROM oauth2_authorization_consent;
-DELETE FROM oauth2_authorization;
-DELETE FROM oauth2_registered_client;
-DELETE FROM oauth2_jwt_keys;
+--DELETE FROM oauth2_authorization_consent;
+--DELETE FROM oauth2_authorization;
+--DELETE FROM oauth2_registered_client;
+--DELETE FROM oauth2_jwt_keys;
 
 -- 创建测试客户端
 --INSERT INTO oauth2_registered_client (

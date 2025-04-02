@@ -18,7 +18,7 @@ spring:
     init:
       mode: always
       schema-locations: classpath:schema/oauth2-schema.sql
-      data-locations: classpath:schema/init.sql
+#      data-locations: classpath:schema/init.sql
   jpa:
     hibernate:
       ddl-auto: none
