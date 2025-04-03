@@ -1,0 +1,14 @@
+server:
+  port: 8091
+
+security:
+  oauth2:
+    resource:
+      id: legacy-api
+      jwt:
+        key-uri: http://localhost:9001/oauth2/token_key
+      prefer-token-info: true
+
+logging:
+  level:
+    org.springframework.security: DEBUG 
