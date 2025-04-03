@@ -29,7 +29,7 @@ import org.springframework.security.oauth2.server.authorization.token.JwtGenerat
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.web.SecurityFilterChain;
 
-import com.example.api_auth_server.service.JdbcJwkService;
+import com.example.api_auth_server.service.KeyStoreJwkService;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
@@ -40,10 +40,10 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 @EnableWebSecurity
 public class AuthServerConfig {
 
-    private final JdbcJwkService jdbcJwkService;
+    private final KeyStoreJwkService keyStoreJwkService;
 
-    public AuthServerConfig(JdbcJwkService jdbcJwkService) {
-        this.jdbcJwkService = jdbcJwkService;
+    public AuthServerConfig(KeyStoreJwkService keyStoreJwkService) {
+        this.keyStoreJwkService = keyStoreJwkService;
     }
 
     @Bean
@@ -134,8 +134,8 @@ public class AuthServerConfig {
 
     @Bean
     public JWKSource<SecurityContext> jwkSource() {
-        // 使用JdbcJwkService从数据库获取或创建JWK
-        return jdbcJwkService.getJwkSource();
+        // 使用KeyStoreJwkService从密钥库获取JWK
+        return keyStoreJwkService.getJwkSource();
     }
 
     @Bean

@@ -25,6 +25,18 @@
 - Maven 3.6+
 - PostgreSQL 数据库
 
+### 生成密钥库
+
+在运行项目之前，需要生成JWT签名使用的密钥库：
+
+```bash
+# 生成RSA密钥对并存储到JKS密钥库
+keytool -genkeypair -alias myalias -keyalg RSA -keysize 2048 -storetype JKS -keystore mykeystore.jks -storepass mykeystorepass -keypass mykeypass -dname "CN=localhost, OU=Development, O=Example, L=City, S=State, C=CN"
+
+# 将生成的密钥库文件移动到项目资源目录
+mv mykeystore.jks api-auth-server/src/main/resources/
+```
+
 ### 构建项目
 
 ```bash

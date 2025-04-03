@@ -69,15 +69,15 @@ CREATE TABLE IF NOT EXISTS oauth2_authorization_consent (
 );
 
 -- JWT密钥表 - 用于集群环境共享同一密钥
-CREATE TABLE IF NOT EXISTS oauth2_jwt_keys (
-    id VARCHAR(36) NOT NULL,
-    key_id VARCHAR(36) NOT NULL,
-    public_key TEXT NOT NULL,
-    private_key TEXT NOT NULL,
-    issue_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    PRIMARY KEY (id)
-);
+--CREATE TABLE IF NOT EXISTS oauth2_jwt_keys (
+--    id VARCHAR(36) NOT NULL,
+--    key_id VARCHAR(36) NOT NULL,
+--    public_key TEXT NOT NULL,
+--    private_key TEXT NOT NULL,
+--    issue_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+--    PRIMARY KEY (id)
+--);
 
 -- 创建索引
 CREATE INDEX IF NOT EXISTS oauth2_authorization_client_id_idx 

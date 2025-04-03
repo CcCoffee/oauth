@@ -32,3 +32,12 @@ spring:
         issuer: http://localhost:9000
   application:
     name: api-auth-server
+
+# 密钥库配置
+app:
+  jwt:
+    keystore:
+      path: mykeystore.jks
+      password: mykeystorepass
+      key-alias: myalias
+      key-password: mykeypass
