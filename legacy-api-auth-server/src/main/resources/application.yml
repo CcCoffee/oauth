@@ -1,0 +1,29 @@
+server:
+  port: 9001
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/oauth
+    username: postgres
+    password: 123456
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema/oauth2-schema.sql
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
+
+# 密钥库配置
+app:
+  jwt:
+    keystore:
+      path: mykeystore.jks
+      password: mykeystorepass
+      key-alias: myalias
+      key-password: mykeypass
