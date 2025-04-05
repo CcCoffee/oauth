@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
@@ -25,6 +26,9 @@ public class AuthServerConfig extends AuthorizationServerConfigurerAdapter {
 
     @Autowired
     private DataSource dataSource;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -73,7 +77,24 @@ public class AuthServerConfig extends AuthorizationServerConfigurerAdapter {
 
     @Override
     public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-        clients.jdbc(dataSource);
+        // 使用内存中的客户端配置进行测试
+        clients.inMemory()
+            .withClient("opaque-client")
+                .secret(passwordEncoder.encode("opaque-secret"))
+                .authorizedGrantTypes("client_credentials")
+                .scopes("message.read")
+                .accessTokenValiditySeconds(3600)
+                .resourceIds("legacy-api")
+            .and()
+            .withClient("jwt-client")
+                .secret(passwordEncoder.encode("jwt-secret"))
+                .authorizedGrantTypes("client_credentials")
+                .scopes("message.read")
+                .accessTokenValiditySeconds(3600)
+                .resourceIds("legacy-api");
+
+        // 注释掉JDBC配置，使用内存配置进行测试
+        // clients.jdbc(dataSource);
     }
 
     @Override
