@@ -4,9 +4,9 @@ server:
 security:
   oauth2:
     resource:
-      id: legacy-api
+      id: jwt-client-resource-id
       jwt:
-        key-uri: http://localhost:9001/oauth/token_key
+        key-uri: http://localhost:9000/oauth/token_key
       prefer-token-info: true
 
 logging:

@@ -27,7 +27,7 @@ public class ClientInitializationService implements CommandLineRunner {
                 clientRegistrationService.addClientDetails(
                         "opaque-client",
                         "opaque-secret",
-                        "legacy-api",
+                        "opaque-client-resource-id",
                         "message.read",
                         "client_credentials",
                         null,
@@ -46,7 +46,7 @@ public class ClientInitializationService implements CommandLineRunner {
                 clientRegistrationService.addClientDetails(
                         "jwt-client",
                         "jwt-secret",
-                        "legacy-api",
+                        "jwt-client-resource-id",
                         "message.read",
                         "client_credentials",
                         null,

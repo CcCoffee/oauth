@@ -22,6 +22,7 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
+import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
@@ -90,6 +91,9 @@ public class AuthServerConfig {
                                 .accessTokenTimeToLive(Duration.ofDays(365)) // 有效期 365 天
                                 .accessTokenFormat(OAuth2TokenFormat.REFERENCE)
                                 .build())
+                        .clientSettings(ClientSettings.builder()
+                                .setting("resource.id", "opaque-client-resource-id")
+                                .build())
                         .build();
                 registeredClientRepository.save(opaqueClient);
             }
@@ -105,6 +109,9 @@ public class AuthServerConfig {
                         .tokenSettings(TokenSettings.builder()
                                 .accessTokenTimeToLive(Duration.ofHours(24)) // 有效期 24 小时
                                 .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
+                                .build())
+                        .clientSettings(ClientSettings.builder()
+                                .setting("resource.id", "jwt-client-resource-id")
                                 .build())
                         .build();
                 registeredClientRepository.save(jwtClient);
@@ -149,9 +156,12 @@ public class AuthServerConfig {
     }
 
     @Bean
-    public OAuth2TokenGenerator<?> tokenGenerator(JWKSource<SecurityContext> jwkSource) {
+    public OAuth2TokenGenerator<?> tokenGenerator(JWKSource<SecurityContext> jwkSource, JwtTokenCustomizer jwtTokenCustomizer) {
         JwtEncoder jwtEncoder = new NimbusJwtEncoder(jwkSource);
         JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder);
+        // 设置JWT token的自定义器
+        jwtGenerator.setJwtCustomizer(jwtTokenCustomizer);
+        
         UUIDAuth2TokenGenerator uuidAuth2TokenGenerator = new UUIDAuth2TokenGenerator();
         
         return new DelegatingOAuth2TokenGenerator(
