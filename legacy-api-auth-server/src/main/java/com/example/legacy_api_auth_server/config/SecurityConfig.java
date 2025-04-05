@@ -18,7 +18,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.inMemoryAuthentication()
             .withUser("admin")
-            .password(passwordEncoder().encode("123456"))
+            .password(passwordEncoder().encode("admin123"))
             .roles("ADMIN");
     }
 
@@ -27,8 +27,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
             .csrf().disable()
             .authorizeRequests()
-            .antMatchers("/oauth/**").permitAll()
-            .anyRequest().authenticated();
+                // 保护客户端管理API，只允许ADMIN角色访问
+                .antMatchers("/api/clients/**").hasRole("ADMIN")
+                // 允许访问OAuth相关端点
+                .antMatchers("/oauth/**").permitAll()
+                // 其他请求需要认证
+                .anyRequest().authenticated()
+            .and()
+                .httpBasic();
     }
 
     @Bean

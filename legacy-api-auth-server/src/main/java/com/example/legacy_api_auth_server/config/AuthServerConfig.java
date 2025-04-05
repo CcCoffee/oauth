@@ -77,24 +77,9 @@ public class AuthServerConfig extends AuthorizationServerConfigurerAdapter {
 
     @Override
     public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-        // 使用内存中的客户端配置进行测试
-        clients.inMemory()
-            .withClient("opaque-client")
-                .secret(passwordEncoder.encode("opaque-secret"))
-                .authorizedGrantTypes("client_credentials")
-                .scopes("message.read")
-                .accessTokenValiditySeconds(3600)
-                .resourceIds("legacy-api")
-            .and()
-            .withClient("jwt-client")
-                .secret(passwordEncoder.encode("jwt-secret"))
-                .authorizedGrantTypes("client_credentials")
-                .scopes("message.read")
-                .accessTokenValiditySeconds(3600)
-                .resourceIds("legacy-api");
-
-        // 注释掉JDBC配置，使用内存配置进行测试
-        // clients.jdbc(dataSource);
+        // 使用JDBC配置，从数据库读取客户端信息
+        clients.jdbc(dataSource)
+               .passwordEncoder(passwordEncoder);
     }
 
     @Override
