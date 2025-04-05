@@ -1,23 +1,23 @@
 package com.example.legacy_api_auth_server.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.crypto.password.StandardPasswordEncoder;
 import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerEndpointsConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
 import org.springframework.security.oauth2.provider.token.TokenStore;
-import org.springframework.security.oauth2.provider.token.store.JdbcTokenStore;
 import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
+import org.springframework.security.oauth2.provider.token.store.KeyStoreKeyFactory;
 
 import javax.sql.DataSource;
+import java.security.KeyPair;
 
 @Configuration
 @EnableAuthorizationServer
@@ -28,11 +28,33 @@ public class AuthServerConfig extends AuthorizationServerConfigurerAdapter {
 
     @Autowired
     private AuthenticationManager authenticationManager;
+    
+    @Value("${app.jwt.keystore.path}")
+    private String keystorePath;
+    
+    @Value("${app.jwt.keystore.password}")
+    private String keystorePassword;
+    
+    @Value("${app.jwt.keystore.key-alias}")
+    private String keyAlias;
+    
+    @Value("${app.jwt.keystore.key-password}")
+    private String keyPassword;
 
     @Bean
     public JwtAccessTokenConverter accessTokenConverter() {
         JwtAccessTokenConverter converter = new JwtAccessTokenConverter();
-        converter.setSigningKey("123456"); // 使用对称密钥进行签名
+        
+        // 从密钥库加载密钥对
+        KeyStoreKeyFactory keyStoreKeyFactory = new KeyStoreKeyFactory(
+                new ClassPathResource(keystorePath), 
+                keystorePassword.toCharArray()
+        );
+        KeyPair keyPair = keyStoreKeyFactory.getKeyPair(keyAlias, keyPassword.toCharArray());
+        
+        // 设置密钥对到转换器
+        converter.setKeyPair(keyPair);
+        
         return converter;
     }
 
