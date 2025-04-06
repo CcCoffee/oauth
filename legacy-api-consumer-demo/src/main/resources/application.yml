@@ -1,0 +1,19 @@
+server:
+  port: 8081
+
+oauth2:
+  server:
+    token-uri: http://localhost:9001/oauth/token
+  client:
+    jwt:
+      client-id: jwt-client
+      client-secret: jwt-secret
+
+api:
+  server:
+    url: http://localhost:8091
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG 
