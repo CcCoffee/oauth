@@ -3,7 +3,8 @@ server:
 
 oauth2:
   server:
-    token-uri: http://localhost:9001/oauth/token
+#    token-uri: http://localhost:9001/oauth/token  # legacy auth server
+    token-uri: http://localhost:9000/oauth/token  # new auth server with legacy API
   client:
     jwt:
       client-id: jwt-client

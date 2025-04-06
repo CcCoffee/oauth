@@ -64,8 +64,11 @@ public class AuthServerConfig {
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests((authorize) -> authorize
+                        .requestMatchers("/oauth/token", "/oauth/token_key")
+                        .permitAll()
                         .anyRequest().permitAll()
-                );
+                )
+                .csrf(csrf -> csrf.disable());
         return http.build();
     }
 
