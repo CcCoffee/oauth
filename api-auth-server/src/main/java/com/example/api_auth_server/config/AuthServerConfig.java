@@ -82,43 +82,43 @@ public class AuthServerConfig {
         JdbcRegisteredClientRepository registeredClientRepository = new JdbcRegisteredClientRepository(jdbcTemplate);
 
         try {
-            // 不透明令牌客户端
-            if (registeredClientRepository.findByClientId("opaque-client") == null) {
-                RegisteredClient opaqueClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                        .clientId("opaque-client")
-                        .clientSecret(passwordEncoder.encode("opaque-secret"))
-                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                        .scope("message.read")
-                        .tokenSettings(TokenSettings.builder()
-                                .accessTokenTimeToLive(Duration.ofDays(365)) // 有效期 365 天
-                                .accessTokenFormat(OAuth2TokenFormat.REFERENCE)
-                                .build())
-                        .clientSettings(ClientSettings.builder()
-                                .setting("resource.id", "opaque-client-resource-id")
-                                .build())
-                        .build();
-                registeredClientRepository.save(opaqueClient);
-            }
-
-            // JWT令牌客户端
-            if (registeredClientRepository.findByClientId("jwt-client") == null) {
-                RegisteredClient jwtClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                        .clientId("jwt-client")
-                        .clientSecret(passwordEncoder.encode("jwt-secret"))
-                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                        .scope("message.read")
-                        .tokenSettings(TokenSettings.builder()
-                                .accessTokenTimeToLive(Duration.ofHours(24)) // 有效期 24 小时
-                                .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
-                                .build())
-                        .clientSettings(ClientSettings.builder()
-                                .setting("resource.id", "jwt-client-resource-id")
-                                .build())
-                        .build();
-                registeredClientRepository.save(jwtClient);
-            }
+//            // 不透明令牌客户端
+//            if (registeredClientRepository.findByClientId("opaque-client") == null) {
+//                RegisteredClient opaqueClient = RegisteredClient.withId(UUID.randomUUID().toString())
+//                        .clientId("opaque-client")
+//                        .clientSecret(passwordEncoder.encode("opaque-secret"))
+//                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+//                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+//                        .scope("message.read")
+//                        .tokenSettings(TokenSettings.builder()
+//                                .accessTokenTimeToLive(Duration.ofDays(365)) // 有效期 365 天
+//                                .accessTokenFormat(OAuth2TokenFormat.REFERENCE)
+//                                .build())
+//                        .clientSettings(ClientSettings.builder()
+//                                .setting("resource.id", "opaque-client-resource-id")
+//                                .build())
+//                        .build();
+//                registeredClientRepository.save(opaqueClient);
+//            }
+//
+//            // JWT令牌客户端
+//            if (registeredClientRepository.findByClientId("jwt-client") == null) {
+//                RegisteredClient jwtClient = RegisteredClient.withId(UUID.randomUUID().toString())
+//                        .clientId("jwt-client")
+//                        .clientSecret(passwordEncoder.encode("jwt-secret"))
+//                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+//                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+//                        .scope("message.read")
+//                        .tokenSettings(TokenSettings.builder()
+//                                .accessTokenTimeToLive(Duration.ofHours(24)) // 有效期 24 小时
+//                                .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
+//                                .build())
+//                        .clientSettings(ClientSettings.builder()
+//                                .setting("resource.id", "jwt-client-resource-id")
+//                                .build())
+//                        .build();
+//                registeredClientRepository.save(jwtClient);
+//            }
 
             // 资源服务器客户端（用于令牌内省）
             if (registeredClientRepository.findByClientId("resource-server") == null) {

@@ -41,3 +41,6 @@ app:
       password: mykeystorepass
       key-alias: myalias
       key-password: mykeypass
+oauth2:
+  migration:
+    enabled: true

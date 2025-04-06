@@ -32,7 +32,7 @@ public class ClientInitializationService implements CommandLineRunner {
                         "client_credentials",
                         null,
                         null,
-                        3600,
+                        3600 * 24 * 365, // 365 days
                         null,
                         null,
                         null
@@ -51,7 +51,7 @@ public class ClientInitializationService implements CommandLineRunner {
                         "client_credentials",
                         null,
                         null,
-                        3600,
+                        3600 * 24, // 24 hours
                         null,
                         null,
                         null
