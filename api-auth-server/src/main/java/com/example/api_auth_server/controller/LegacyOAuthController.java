@@ -7,13 +7,21 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 兼容旧版OAuth2端点的控制器
+ */
 @RestController
-public class TokenKeyController {
+public class LegacyOAuthController {
     
     @Value("${app.jwt.keystore.path}")
     private String keystorePath;
@@ -43,11 +51,11 @@ public class TokenKeyController {
             
             // 转换为PEM格式的公钥
             byte[] encoded = publicKey.getEncoded();
-            String publicKeyPEM = 
+            String publicKeyPEM =
                     "-----BEGIN PUBLIC KEY-----\n" +
                     Base64.getEncoder().encodeToString(encoded) +
                     "\n-----END PUBLIC KEY-----";
-            
+
             // 构建响应Map
             Map<String, String> result = new HashMap<>();
             result.put("alg", "SHA256withRSA");
@@ -57,5 +65,14 @@ public class TokenKeyController {
         } catch (Exception e) {
             throw new RuntimeException("获取公钥失败: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 拦截/oauth/token请求并转发到/oauth2/token
+     */
+    @RequestMapping(value = "/oauth/token", method = {RequestMethod.POST, RequestMethod.GET})
+    public void handleTokenRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/oauth2/token");
+        dispatcher.forward(request, response);
     }
 } 
