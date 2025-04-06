@@ -124,6 +124,7 @@ public class AuthServerConfig {
             if (registeredClientRepository.findByClientId("resource-server") == null) {
                 RegisteredClient resourceServer = RegisteredClient.withId(UUID.randomUUID().toString())
                         .clientId("resource-server")
+                        .clientName("resource-server")
                         .clientSecret(passwordEncoder.encode("secret"))
                         .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                         .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
@@ -164,9 +165,9 @@ public class AuthServerConfig {
         JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder);
         // 设置JWT token的自定义器
         jwtGenerator.setJwtCustomizer(jwtTokenCustomizer);
-        
+
         UUIDAuth2TokenGenerator uuidAuth2TokenGenerator = new UUIDAuth2TokenGenerator();
-        
+
         return new DelegatingOAuth2TokenGenerator(
             jwtGenerator,
             uuidAuth2TokenGenerator
@@ -174,7 +175,7 @@ public class AuthServerConfig {
     }
 
     @Bean
-    public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate, 
+    public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate,
             RegisteredClientRepository registeredClientRepository) {
         return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
     }

@@ -1,5 +1,6 @@
 package com.example.api_auth_server.migration;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,12 +81,15 @@ public class OAuth2MigrationTool {
                 
                 // 处理资源ID
                 String resourceIds = (String) client.get("resource_ids");
+
+                // 处理额外信息
+                String additionalInfo = (String) client.get("additional_information");
                 
                 // 创建TokenSettings
                 TokenSettings tokenSettings = buildTokenSettings(client);
                 
                 // 创建ClientSettings
-                ClientSettings clientSettings = buildClientSettings(resourceIds);
+                ClientSettings clientSettings = buildClientSettings(resourceIds, additionalInfo);
                 
                 // 创建RegisteredClient
                 RegisteredClient.Builder clientBuilder = RegisteredClient.withId(UUID.randomUUID().toString())
@@ -206,7 +210,7 @@ public class OAuth2MigrationTool {
     /**
      * 构建客户端设置
      */
-    private ClientSettings buildClientSettings(String resourceIds) {
+    private ClientSettings buildClientSettings(String resourceIds, String additionalInfo) {
         ClientSettings.Builder builder = ClientSettings.builder()
                 .requireAuthorizationConsent(false)
                 .requireProofKey(false);
@@ -214,6 +218,17 @@ public class OAuth2MigrationTool {
         // 将resource_id保存到client settings中
         if (StringUtils.hasText(resourceIds)) {
             builder.setting("resource.id", resourceIds);
+        }
+
+        if (StringUtils.hasText(additionalInfo)) {
+            try {
+                Map additionalInfoMap = objectMapper.readValue(additionalInfo, Map.class);
+                additionalInfoMap.forEach((k,v) -> {
+                    builder.setting(k.toString(), v.toString());
+                });
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
         }
         
         return builder.build();
@@ -230,22 +245,32 @@ public class OAuth2MigrationTool {
         if (accessTokenValidity != null) {
             builder.accessTokenTimeToLive(Duration.ofSeconds(accessTokenValidity));
         } else {
-            builder.accessTokenTimeToLive(Duration.ofHours(24)); // 默认24小时
+            throw new RuntimeException("accessTokenValidity not found");
         }
-        
+
         // 刷新令牌有效期（秒）
-        Integer refreshTokenValidity = (Integer) client.get("refresh_token_validity");
-        if (refreshTokenValidity != null) {
-            builder.refreshTokenTimeToLive(Duration.ofSeconds(refreshTokenValidity));
-        } else {
-            builder.refreshTokenTimeToLive(Duration.ofDays(30)); // 默认30天
+//        Integer refreshTokenValidity = (Integer) client.get("refresh_token_validity");
+//        if (refreshTokenValidity != null) {
+//            builder.refreshTokenTimeToLive(Duration.ofSeconds(refreshTokenValidity));
+//        } else {
+//            builder.refreshTokenTimeToLive(Duration.ofDays(30)); // 默认30天
+//        }
+        
+        // 令牌格式 - 使用 SELF_CONTAINED（JWT）或 REFERENCE (UUID)
+        String additionalInfo = (String) client.get("additional_information");
+        if (StringUtils.hasText(additionalInfo)) {
+            try {
+                Map additionalInfoMap = objectMapper.readValue(additionalInfo, Map.class);
+                Object profileType = additionalInfoMap.getOrDefault("type", "none"); // external, internal, none
+                if ("external".equalsIgnoreCase(profileType.toString()) || "internal".equalsIgnoreCase(profileType.toString())) {
+                    builder.accessTokenFormat(OAuth2TokenFormat.REFERENCE);
+                } else {
+                    builder.accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED);
+                }
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
         }
-        
-        // 令牌格式 - 使用自包含（JWT）
-        builder.accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED);
-        
-        // 是否重用刷新令牌
-        builder.reuseRefreshTokens(true);
         
         return builder.build();
     }
