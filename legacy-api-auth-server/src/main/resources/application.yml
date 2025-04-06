@@ -18,6 +18,7 @@ logging:
     org.springframework.web: INFO
     org.springframework.security: DEBUG
     org.springframework.security.oauth2: DEBUG
+    com.example.legacy_api_auth_server.service: DEBUG
 
 # 密钥库配置
 app:
