@@ -29,6 +29,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .authorizeRequests()
                 // 保护客户端管理API，只允许ADMIN角色访问
                 .antMatchers("/api/clients/**").hasRole("ADMIN")
+                // 保护令牌导出API，只允许ADMIN角色访问
+                .antMatchers("/api/admin/token/**").hasRole("ADMIN")
                 // 允许访问OAuth相关端点
                 .antMatchers("/oauth/**").permitAll()
                 // 其他请求需要认证

@@ -28,13 +28,13 @@ CREATE TABLE IF NOT EXISTS oauth_access_token (
   token_id VARCHAR(256),                              -- 访问令牌的MD5哈希值，如'e8a14feb5d40cce0520ca5d9f7e0f1b3'
   token BYTEA,                                        -- 访问令牌的序列化对象
                                                       -- 示例：包含令牌值、过期时间、用户信息等的Java序列化对象
-                                                      -- 例如OAuth2AccessToken序列化后的二进制数据
+                                                      -- 例如DefaultOAuth2AccessToken序列化后的二进制数据
   authentication_id VARCHAR(256) PRIMARY KEY,         -- 认证ID，由客户端ID和用户名组合生成的唯一标识符，如'dc5891b1ce4c33f1b7aaee4c4cc12c6f'
   user_name VARCHAR(256),                             -- 用户名，如'john.doe@example.com'
   client_id VARCHAR(256),                             -- 客户端ID，如'mobile-app'
   authentication BYTEA,                               -- 认证信息的序列化对象
                                                       -- 示例：包含用户认证详情的Java序列化对象
-                                                      -- 例如UsernamePasswordAuthenticationToken序列化后的二进制数据
+                                                      -- 例如OAuth2Authentication序列化后的二进制数据
   refresh_token VARCHAR(256)                          -- 刷新令牌的MD5哈希值，如'c5ba2b2e0be48a4bf3fbd5c42910c92c'
 );
 

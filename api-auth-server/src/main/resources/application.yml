@@ -44,3 +44,7 @@ app:
 oauth2:
   migration:
     enabled: true
+    legacy-server:
+      url: http://localhost:9001
+      username: admin
+      password: admin123
