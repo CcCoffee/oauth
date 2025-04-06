@@ -282,6 +282,288 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /clients:
+    post:
+      tags:
+        - admin
+      summary: 创建新的OAuth2客户端
+      description: 创建一个新的OAuth2客户端
+      operationId: createClient
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                client_id:
+                  type: string
+                  description: 客户端ID
+                client_secret:
+                  type: string
+                  description: 客户端密钥
+                resource_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: 资源ID列表
+                scope:
+                  type: array
+                  items:
+                    type: string
+                  description: 权限范围列表
+                grant_types:
+                  type: array
+                  items:
+                    type: string
+                  description: 授权类型列表
+                expires_in:
+                  type: integer
+                  description: 令牌过期时间（秒）
+                additional_information:
+                  type: object
+                  description: 额外的客户端信息
+              required:
+                - client_id
+                - client_secret
+      responses:
+        '201':
+          description: 客户端创建成功
+        '400':
+          description: 请求参数错误
+        '401':
+          description: 认证失败
+        '409':
+          description: 客户端ID已存在
+
+    get:
+      tags:
+        - admin
+      summary: 查询客户端列表
+      description: 根据resourceId查询客户端列表
+      operationId: getClients
+      security:
+        - basicAuth: []
+      parameters:
+        - name: resource_id
+          in: query
+          schema:
+            type: string
+          description: 资源ID
+      responses:
+        '200':
+          description: 成功获取客户端列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Client'
+        '401':
+          description: 认证失败
+
+  /clients/{client_id}:
+    get:
+      tags:
+        - admin
+      summary: 获取指定客户端信息
+      description: 根据client_id查询客户端详细信息
+      operationId: getClient
+      security:
+        - basicAuth: []
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 客户端ID
+      responses:
+        '200':
+          description: 成功获取客户端信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '401':
+          description: 认证失败
+        '404':
+          description: 客户端不存在
+
+    put:
+      tags:
+        - admin
+      summary: 更新客户端信息
+      description: 更新指定客户端的配置信息
+      operationId: updateClient
+      security:
+        - basicAuth: []
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 客户端ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scope:
+                  type: array
+                  items:
+                    type: string
+                grant_types:
+                  type: array
+                  items:
+                    type: string
+                expires_in:
+                  type: integer
+                additional_information:
+                  type: object
+                resource_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: 客户端更新成功
+        '401':
+          description: 认证失败
+        '404':
+          description: 客户端不存在
+
+    delete:
+      tags:
+        - admin
+      summary: 删除客户端
+      description: 删除指定的客户端
+      operationId: deleteClient
+      security:
+        - basicAuth: []
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 客户端ID
+      responses:
+        '204':
+          description: 客户端删除成功
+        '401':
+          description: 认证失败
+        '404':
+          description: 客户端不存在
+
+  /clients/{client_id}/secret:
+    put:
+      tags:
+        - admin
+      summary: 更新客户端密钥
+      description: 更新指定客户端的密钥
+      operationId: updateClientSecret
+      security:
+        - basicAuth: []
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 客户端ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                client_secret:
+                  type: string
+                  description: 新的客户端密钥
+              required:
+                - client_secret
+      responses:
+        '200':
+          description: 客户端密钥更新成功
+        '401':
+          description: 认证失败
+        '404':
+          description: 客户端不存在
+
+  /clients/{client_id}/tokens:
+    get:
+      tags:
+        - admin
+      summary: 获取客户端令牌列表
+      description: 获取指定客户端的访问令牌列表
+      operationId: getClientTokens
+      security:
+        - basicAuth: []
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 客户端ID
+        - name: scope
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: 按权限范围过滤
+      responses:
+        '200':
+          description: 成功获取令牌列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Token'
+        '401':
+          description: 认证失败
+        '404':
+          description: 客户端不存在
+
+    delete:
+      tags:
+        - admin
+      summary: 删除客户端令牌
+      description: 删除指定客户端的访问令牌
+      operationId: deleteClientTokens
+      security:
+        - basicAuth: []
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 客户端ID
+        - name: scope
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: 按权限范围过滤
+      responses:
+        '204':
+          description: 令牌删除成功
+        '401':
+          description: 认证失败
+        '404':
+          description: 客户端不存在
+
 components:
   securitySchemes:
     basicAuth:
@@ -342,4 +624,52 @@ components:
           type: string
       required:
         - status
-        - message 
+        - message
+
+    Client:
+      type: object
+      properties:
+        client_id:
+          type: string
+        client_secret:
+          type: string
+        resource_ids:
+          type: array
+          items:
+            type: string
+        scope:
+          type: array
+          items:
+            type: string
+        grant_types:
+          type: array
+          items:
+            type: string
+        expires_in:
+          type: integer
+        additional_information:
+          type: object
+      required:
+        - client_id
+        - client_secret
+
+    Token:
+      type: object
+      properties:
+        token_id:
+          type: string
+        client_id:
+          type: string
+        scope:
+          type: array
+          items:
+            type: string
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - token_id
+        - client_id 

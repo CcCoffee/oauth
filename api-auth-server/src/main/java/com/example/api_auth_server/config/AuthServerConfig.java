@@ -34,6 +34,7 @@ import org.springframework.security.oauth2.server.authorization.token.JwtGenerat
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import com.example.api_auth_server.service.KeyStoreJwkService;
 import com.nimbusds.jose.jwk.source.JWKSource;
@@ -75,6 +76,7 @@ public class AuthServerConfig {
                         .requestMatchers("/api-docs/**")
                         .permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/clients/**").hasRole("ADMIN")
                         .anyRequest().permitAll()
                 )
                 .httpBasic(Customizer.withDefaults())
@@ -99,71 +101,71 @@ public class AuthServerConfig {
         return new InMemoryUserDetailsManager(adminUser);
     }
 
-    @Bean
-    public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder) {
-        JdbcRegisteredClientRepository registeredClientRepository = new JdbcRegisteredClientRepository(jdbcTemplate);
-
-        try {
-//            // 不透明令牌客户端
-//            if (registeredClientRepository.findByClientId("opaque-client") == null) {
-//                RegisteredClient opaqueClient = RegisteredClient.withId(UUID.randomUUID().toString())
-//                        .clientId("opaque-client")
-//                        .clientSecret(passwordEncoder.encode("opaque-secret"))
-//                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-//                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-//                        .scope("message.read")
-//                        .tokenSettings(TokenSettings.builder()
-//                                .accessTokenTimeToLive(Duration.ofDays(365)) // 有效期 365 天
-//                                .accessTokenFormat(OAuth2TokenFormat.REFERENCE)
-//                                .build())
-//                        .clientSettings(ClientSettings.builder()
-//                                .setting("resource.id", "opaque-client-resource-id")
-//                                .build())
-//                        .build();
-//                registeredClientRepository.save(opaqueClient);
-//            }
+//    @Bean
+//    public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder) {
+//        JdbcRegisteredClientRepository registeredClientRepository = new JdbcRegisteredClientRepository(jdbcTemplate);
 //
-//            // JWT令牌客户端
-//            if (registeredClientRepository.findByClientId("jwt-client") == null) {
-//                RegisteredClient jwtClient = RegisteredClient.withId(UUID.randomUUID().toString())
-//                        .clientId("jwt-client")
-//                        .clientSecret(passwordEncoder.encode("jwt-secret"))
+//        try {
+////            // 不透明令牌客户端
+////            if (registeredClientRepository.findByClientId("opaque-client") == null) {
+////                RegisteredClient opaqueClient = RegisteredClient.withId(UUID.randomUUID().toString())
+////                        .clientId("opaque-client")
+////                        .clientSecret(passwordEncoder.encode("opaque-secret"))
+////                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+////                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+////                        .scope("message.read")
+////                        .tokenSettings(TokenSettings.builder()
+////                                .accessTokenTimeToLive(Duration.ofDays(365)) // 有效期 365 天
+////                                .accessTokenFormat(OAuth2TokenFormat.REFERENCE)
+////                                .build())
+////                        .clientSettings(ClientSettings.builder()
+////                                .setting("resource.id", "opaque-client-resource-id")
+////                                .build())
+////                        .build();
+////                registeredClientRepository.save(opaqueClient);
+////            }
+////
+////            // JWT令牌客户端
+////            if (registeredClientRepository.findByClientId("jwt-client") == null) {
+////                RegisteredClient jwtClient = RegisteredClient.withId(UUID.randomUUID().toString())
+////                        .clientId("jwt-client")
+////                        .clientSecret(passwordEncoder.encode("jwt-secret"))
+////                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+////                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+////                        .scope("message.read")
+////                        .tokenSettings(TokenSettings.builder()
+////                                .accessTokenTimeToLive(Duration.ofHours(24)) // 有效期 24 小时
+////                                .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
+////                                .build())
+////                        .clientSettings(ClientSettings.builder()
+////                                .setting("resource.id", "jwt-client-resource-id")
+////                                .build())
+////                        .build();
+////                registeredClientRepository.save(jwtClient);
+////            }
+//
+//            // 资源服务器客户端（用于令牌内省）
+//            if (registeredClientRepository.findByClientId("resource-server") == null) {
+//                RegisteredClient resourceServer = RegisteredClient.withId(UUID.randomUUID().toString())
+//                        .clientId("resource-server")
+//                        .clientName("resource-server")
+//                        .clientSecret(passwordEncoder.encode("secret"))
 //                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
 //                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-//                        .scope("message.read")
-//                        .tokenSettings(TokenSettings.builder()
-//                                .accessTokenTimeToLive(Duration.ofHours(24)) // 有效期 24 小时
-//                                .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
-//                                .build())
-//                        .clientSettings(ClientSettings.builder()
-//                                .setting("resource.id", "jwt-client-resource-id")
-//                                .build())
+//                        // 关于内省客户端的scope设置，这不是强制固定为"introspection"的，但这是一种广泛接受的最佳实践。
+//                        // OAuth2规范中并没有严格规定内省客户端必须使用名为"introspection"的scope，这是Spring Security的约定用法。
+//                        // 实际上，您可以修改这个scope名称，但需要确保授权服务器能够正确识别并授权该客户端执行令牌内省操作。
+//                        .scope("introspection")
 //                        .build();
-//                registeredClientRepository.save(jwtClient);
+//                registeredClientRepository.save(resourceServer);
 //            }
-
-            // 资源服务器客户端（用于令牌内省）
-            if (registeredClientRepository.findByClientId("resource-server") == null) {
-                RegisteredClient resourceServer = RegisteredClient.withId(UUID.randomUUID().toString())
-                        .clientId("resource-server")
-                        .clientName("resource-server")
-                        .clientSecret(passwordEncoder.encode("secret"))
-                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                        // 关于内省客户端的scope设置，这不是强制固定为"introspection"的，但这是一种广泛接受的最佳实践。
-                        // OAuth2规范中并没有严格规定内省客户端必须使用名为"introspection"的scope，这是Spring Security的约定用法。
-                        // 实际上，您可以修改这个scope名称，但需要确保授权服务器能够正确识别并授权该客户端执行令牌内省操作。
-                        .scope("introspection")
-                        .build();
-                registeredClientRepository.save(resourceServer);
-            }
-        } catch (Exception e) {
-            // 处理异常
-            e.printStackTrace();
-        }
-
-        return registeredClientRepository;
-    }
+//        } catch (Exception e) {
+//            // 处理异常
+//            e.printStackTrace();
+//        }
+//
+//        return registeredClientRepository;
+//    }
 
     @Bean
     public JWKSource<SecurityContext> jwkSource() {
