@@ -10,6 +10,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -60,6 +61,7 @@ public class AuthServerConfig {
             .oidc(Customizer.withDefaults());
         http.oauth2ResourceServer(resourceServer -> resourceServer
             .jwt(Customizer.withDefaults()));
+        http.cors(Customizer.withDefaults());
         return http.build();
     }
 
@@ -70,11 +72,14 @@ public class AuthServerConfig {
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers("/oauth/token", "/oauth/token_key")
                         .permitAll()
+                        .requestMatchers("/api-docs/**")
+                        .permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().permitAll()
                 )
                 .httpBasic(Customizer.withDefaults())
-                .csrf(csrf -> csrf.disable());
+                .csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults());
         return http.build();
     }
 

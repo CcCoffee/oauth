@@ -1,0 +1,345 @@
+openapi: 3.0.3
+info:
+  title: OAuth2授权服务API
+  description: 提供OAuth2授权服务的API接口，包含标准OAuth2接口和迁移工具接口
+  version: 1.0.0
+
+servers:
+  - url: 'http://localhost:9000'
+    description: 本地开发服务器
+
+tags:
+  - name: oauth2
+    description: 标准OAuth2接口
+  - name: legacy
+    description: 兼容旧版OAuth2接口
+  - name: migration
+    description: 数据迁移工具接口
+  - name: admin
+    description: 管理员接口
+
+paths:
+  /oauth2/token:
+    post:
+      tags:
+        - oauth2
+      summary: 获取OAuth2访问令牌
+      description: 标准OAuth2令牌端点，用于获取访问令牌
+      operationId: getToken
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                  enum: [client_credentials]
+                  description: 授权类型
+                client_id:
+                  type: string
+                  description: 客户端ID
+                client_secret:
+                  type: string
+                  description: 客户端密钥
+                scope:
+                  type: string
+                  description: 请求的权限范围
+              required:
+                - grant_type
+                - client_id
+                - client_secret
+      responses:
+        '200':
+          description: 获取令牌成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                  expires_in:
+                    type: integer
+                  refresh_token:
+                    type: string
+                  scope:
+                    type: string
+        '400':
+          description: 请求参数错误
+        '401':
+          description: 认证失败
+
+  /oauth2/introspect:
+    post:
+      tags:
+        - oauth2
+      summary: 令牌内省端点
+      description: 用于验证令牌有效性和获取令牌信息
+      operationId: introspectToken
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: 要检查的令牌
+                token_type_hint:
+                  type: string
+                  enum: [access_token, refresh_token]
+                  description: 令牌类型提示
+              required:
+                - token
+      responses:
+        '200':
+          description: 令牌内省结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  active:
+                    type: boolean
+                  client_id:
+                    type: string
+                  username:
+                    type: string
+                  scope:
+                    type: string
+                  exp:
+                    type: integer
+                  iat:
+                    type: integer
+
+  /oauth2/jwks:
+    get:
+      tags:
+        - oauth2
+      summary: JWK密钥集端点
+      description: 提供用于验证JWT令牌的公钥
+      operationId: getJwks
+      responses:
+        '200':
+          description: 成功获取JWK集
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kid:
+                          type: string
+                        kty:
+                          type: string
+                        alg:
+                          type: string
+                        use:
+                          type: string
+                        n:
+                          type: string
+                        e:
+                          type: string
+
+  /oauth/token:
+    post:
+      tags:
+        - legacy
+      summary: 旧版令牌端点
+      description: 兼容旧版OAuth2的令牌获取端点
+      operationId: getLegacyToken
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          description: 获取令牌成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: 请求参数错误
+        '401':
+          description: 认证失败
+
+  /oauth/token_key:
+    get:
+      tags:
+        - legacy
+      summary: 旧版公钥端点
+      description: 兼容旧版OAuth2的公钥获取端点
+      operationId: getLegacyTokenKey
+      responses:
+        '200':
+          description: 成功获取公钥
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alg:
+                    type: string
+                  value:
+                    type: string
+                    description: PEM格式的公钥
+
+  /api/admin/migration/clients:
+    post:
+      tags:
+        - migration
+        - admin
+      summary: 迁移客户端数据
+      description: 触发OAuth2客户端数据的迁移操作
+      operationId: migrateClients
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: 迁移成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [success]
+                  message:
+                    type: string
+        '500':
+          description: 迁移失败
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [error]
+                  message:
+                    type: string
+
+  /api/admin/migration/tokens:
+    post:
+      tags:
+        - migration
+        - admin
+      summary: 迁移令牌数据
+      description: 触发OAuth2访问令牌的迁移操作
+      operationId: migrateTokens
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: 迁移成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigrationResponse'
+        '500':
+          description: 迁移失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/migration/all:
+    post:
+      tags:
+        - migration
+        - admin
+      summary: 迁移所有数据
+      description: 触发所有OAuth2相关数据的迁移操作
+      operationId: migrateAll
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: 迁移成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigrationResponse'
+        '500':
+          description: 迁移失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
+  schemas:
+    TokenRequest:
+      type: object
+      properties:
+        grant_type:
+          type: string
+          enum: [client_credentials]
+        client_id:
+          type: string
+        client_secret:
+          type: string
+        scope:
+          type: string
+      required:
+        - grant_type
+        - client_id
+        - client_secret
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+        refresh_token:
+          type: string
+        scope:
+          type: string
+
+    MigrationResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        message:
+          type: string
+      required:
+        - status
+        - message
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [error]
+        message:
+          type: string
+      required:
+        - status
+        - message 
