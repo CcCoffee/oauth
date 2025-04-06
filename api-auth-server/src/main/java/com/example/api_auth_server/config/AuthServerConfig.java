@@ -54,34 +54,22 @@ public class AuthServerConfig {
     }
 
     @Bean
-    @Order(1)
-    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
-        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
-        http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-            .tokenIntrospectionEndpoint(Customizer.withDefaults())
-            .oidc(Customizer.withDefaults());
-        http.oauth2ResourceServer(resourceServer -> resourceServer
-            .jwt(Customizer.withDefaults()));
-        http.cors(Customizer.withDefaults());
-        return http.build();
-    }
-
-    @Bean
-    @Order(2)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/oauth/token", "/oauth/token_key")
-                        .permitAll()
-                        .requestMatchers("/api-docs/**")
-                        .permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/clients/**").hasRole("ADMIN")
-                        .anyRequest().permitAll()
+                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                                .requestMatchers("/clients/**").hasRole("ADMIN")
                 )
                 .httpBasic(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults());
+        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+        http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
+                .tokenIntrospectionEndpoint(Customizer.withDefaults())
+                .oidc(Customizer.withDefaults());
+        http.oauth2ResourceServer(resourceServer -> resourceServer
+                .jwt(Customizer.withDefaults()));
+        http.cors(Customizer.withDefaults());
         return http.build();
     }
 
@@ -97,7 +85,7 @@ public class AuthServerConfig {
                 .password(passwordEncoder.encode("admin123"))
                 .roles("ADMIN")
                 .build();
-        
+
         return new InMemoryUserDetailsManager(adminUser);
     }
 
@@ -106,43 +94,44 @@ public class AuthServerConfig {
 //        JdbcRegisteredClientRepository registeredClientRepository = new JdbcRegisteredClientRepository(jdbcTemplate);
 //
 //        try {
-////            // 不透明令牌客户端
-////            if (registeredClientRepository.findByClientId("opaque-client") == null) {
-////                RegisteredClient opaqueClient = RegisteredClient.withId(UUID.randomUUID().toString())
-////                        .clientId("opaque-client")
-////                        .clientSecret(passwordEncoder.encode("opaque-secret"))
-////                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-////                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-////                        .scope("message.read")
-////                        .tokenSettings(TokenSettings.builder()
-////                                .accessTokenTimeToLive(Duration.ofDays(365)) // 有效期 365 天
-////                                .accessTokenFormat(OAuth2TokenFormat.REFERENCE)
-////                                .build())
-////                        .clientSettings(ClientSettings.builder()
-////                                .setting("resource.id", "opaque-client-resource-id")
-////                                .build())
-////                        .build();
-////                registeredClientRepository.save(opaqueClient);
-////            }
-////
-////            // JWT令牌客户端
-////            if (registeredClientRepository.findByClientId("jwt-client") == null) {
-////                RegisteredClient jwtClient = RegisteredClient.withId(UUID.randomUUID().toString())
-////                        .clientId("jwt-client")
-////                        .clientSecret(passwordEncoder.encode("jwt-secret"))
-////                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-////                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-////                        .scope("message.read")
-////                        .tokenSettings(TokenSettings.builder()
-////                                .accessTokenTimeToLive(Duration.ofHours(24)) // 有效期 24 小时
-////                                .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
-////                                .build())
-////                        .clientSettings(ClientSettings.builder()
-////                                .setting("resource.id", "jwt-client-resource-id")
-////                                .build())
-////                        .build();
-////                registeredClientRepository.save(jwtClient);
-////            }
+
+    /// /            // 不透明令牌客户端
+    /// /            if (registeredClientRepository.findByClientId("opaque-client") == null) {
+    /// /                RegisteredClient opaqueClient = RegisteredClient.withId(UUID.randomUUID().toString())
+    /// /                        .clientId("opaque-client")
+    /// /                        .clientSecret(passwordEncoder.encode("opaque-secret"))
+    /// /                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+    /// /                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+    /// /                        .scope("message.read")
+    /// /                        .tokenSettings(TokenSettings.builder()
+    /// /                                .accessTokenTimeToLive(Duration.ofDays(365)) // 有效期 365 天
+    /// /                                .accessTokenFormat(OAuth2TokenFormat.REFERENCE)
+    /// /                                .build())
+    /// /                        .clientSettings(ClientSettings.builder()
+    /// /                                .setting("resource.id", "opaque-client-resource-id")
+    /// /                                .build())
+    /// /                        .build();
+    /// /                registeredClientRepository.save(opaqueClient);
+    /// /            }
+    /// /
+    /// /            // JWT令牌客户端
+    /// /            if (registeredClientRepository.findByClientId("jwt-client") == null) {
+    /// /                RegisteredClient jwtClient = RegisteredClient.withId(UUID.randomUUID().toString())
+    /// /                        .clientId("jwt-client")
+    /// /                        .clientSecret(passwordEncoder.encode("jwt-secret"))
+    /// /                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+    /// /                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+    /// /                        .scope("message.read")
+    /// /                        .tokenSettings(TokenSettings.builder()
+    /// /                                .accessTokenTimeToLive(Duration.ofHours(24)) // 有效期 24 小时
+    /// /                                .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
+    /// /                                .build())
+    /// /                        .clientSettings(ClientSettings.builder()
+    /// /                                .setting("resource.id", "jwt-client-resource-id")
+    /// /                                .build())
+    /// /                        .build();
+    /// /                registeredClientRepository.save(jwtClient);
+    /// /            }
 //
 //            // 资源服务器客户端（用于令牌内省）
 //            if (registeredClientRepository.findByClientId("resource-server") == null) {
@@ -166,7 +155,6 @@ public class AuthServerConfig {
 //
 //        return registeredClientRepository;
 //    }
-
     @Bean
     public JWKSource<SecurityContext> jwkSource() {
         // 使用KeyStoreJwkService从密钥库获取JWK
@@ -193,14 +181,14 @@ public class AuthServerConfig {
         UUIDAuth2TokenGenerator uuidAuth2TokenGenerator = new UUIDAuth2TokenGenerator();
 
         return new DelegatingOAuth2TokenGenerator(
-            jwtGenerator,
-            uuidAuth2TokenGenerator
+                jwtGenerator,
+                uuidAuth2TokenGenerator
         );
     }
 
     @Bean
     public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate,
-            RegisteredClientRepository registeredClientRepository) {
+                                                           RegisteredClientRepository registeredClientRepository) {
         return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
     }
 } 
