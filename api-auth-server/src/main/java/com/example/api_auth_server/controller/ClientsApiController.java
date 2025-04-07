@@ -1,18 +1,21 @@
 package com.example.api_auth_server.controller;
 
-import com.example.api_auth_server.model.*;
+import com.example.api_auth_server.model.ClientRequest;
+import com.example.api_auth_server.model.ClientSecretUpdateRequest;
+import com.example.api_auth_server.model.ClientUpdateRequest;
+import com.example.api_auth_server.model.TokenInfo;
 import com.example.api_auth_server.repository.CustomJdbcRegisteredClientRepository;
 import com.example.api_auth_server.service.TokenService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -63,11 +66,11 @@ public class ClientsApiController {
     }
 
     @GetMapping
-    public ResponseEntity<List<RegisteredClient>> getClients(@RequestParam(required = false) String resourceId) {
+    public ResponseEntity<List<Map<String, Object>>> getClients(@RequestParam(required = false) String resourceId) {
         if (resourceId != null && !resourceId.isEmpty()) {
             return ResponseEntity.ok(registeredClientRepository.findByResourceId(resourceId));
         }
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(registeredClientRepository.findAll());
     }
 
     @GetMapping("/{clientId}")

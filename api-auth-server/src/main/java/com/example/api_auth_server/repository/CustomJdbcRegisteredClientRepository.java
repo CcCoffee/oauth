@@ -1,20 +1,20 @@
 package com.example.api_auth_server.repository;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
-import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -91,70 +91,36 @@ public class CustomJdbcRegisteredClientRepository implements RegisteredClientRep
         }
     }
 
-    public List<RegisteredClient> findByResourceId(String resourceId) {
-        String sql = "SELECT * FROM oauth2_registered_client WHERE client_settings::jsonb->>'settings.client.resource.id' = ?";
-        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+    public List<Map<String, Object>> findByResourceId(String resourceId) {
+        String sql = "SELECT id, client_id, client_id_issued_at, client_secret, client_secret_expires_at, client_name, client_authentication_methods," +
+                " authorization_grant_types, redirect_uris, post_logout_redirect_uris, scopes, client_settings, token_settings" +
+                " FROM oauth2_registered_client WHERE client_settings::jsonb->>'resource.id' = ?";
+        return jdbcTemplate.query(sql, getOAuth2RegisteredClientRowMapper(), resourceId);
+    }
+
+    public List<Map<String, Object>> findAll() {
+        String sql = "SELECT id, client_id, client_id_issued_at, client_secret, client_secret_expires_at, client_name, client_authentication_methods," +
+                " authorization_grant_types, redirect_uris, post_logout_redirect_uris, scopes, client_settings, token_settings" +
+                " FROM oauth2_registered_client";
+        return jdbcTemplate.query(sql, getOAuth2RegisteredClientRowMapper());
+    }
+
+    private RowMapper<Map<String, Object>> getOAuth2RegisteredClientRowMapper() {
+        return (rs, rowNum) -> {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("clientId", rs.getString("client_id"));
+            map.put("clientSecretExpiresAt", rs.getString("client_secret_expires_at"));
+            map.put("clientName", rs.getString("client_name"));
+            map.put("clientAuthenticationMethods", rs.getString("client_authentication_methods"));
+            map.put("authorizationGrantTypes", rs.getString("authorization_grant_types"));
+            map.put("scopes", rs.getString("scopes"));
             try {
-                String id = rs.getString("id");
-                String clientId = rs.getString("client_id");
-                String clientSecret = rs.getString("client_secret");
-                String clientName = rs.getString("client_name");
-                String clientAuthenticationMethods = rs.getString("client_authentication_methods");
-                String authorizationGrantTypes = rs.getString("authorization_grant_types");
-                String redirectUris = rs.getString("redirect_uris");
-                String scopes = rs.getString("scopes");
-                String clientSettings = rs.getString("client_settings");
-                String tokenSettings = rs.getString("token_settings");
-
-                RegisteredClient.Builder builder = RegisteredClient.withId(id)
-                    .clientId(clientId)
-                    .clientSecret(clientSecret)
-                    .clientName(clientName);
-
-                // 设置认证方法
-                List<String> authMethods = objectMapper.readValue(clientAuthenticationMethods, new TypeReference<List<String>>() {});
-                authMethods.forEach(method -> {
-                    switch (method) {
-                        case "client_secret_basic" -> builder.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
-                        case "client_secret_post" -> builder.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST);
-                        case "client_secret_jwt" -> builder.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_JWT);
-                        case "private_key_jwt" -> builder.clientAuthenticationMethod(ClientAuthenticationMethod.PRIVATE_KEY_JWT);
-                        case "none" -> builder.clientAuthenticationMethod(ClientAuthenticationMethod.NONE);
-                    }
-                });
-
-                // 设置授权类型
-                List<String> grantTypes = objectMapper.readValue(authorizationGrantTypes, new TypeReference<List<String>>() {});
-                grantTypes.forEach(type -> {
-                    switch (type) {
-                        case "authorization_code" -> builder.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE);
-                        case "refresh_token" -> builder.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN);
-                        case "client_credentials" -> builder.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS);
-                        case "urn:ietf:params:oauth:grant-type:device_code" -> builder.authorizationGrantType(AuthorizationGrantType.DEVICE_CODE);
-                        case "urn:ietf:params:oauth:grant-type:jwt-bearer" -> builder.authorizationGrantType(AuthorizationGrantType.JWT_BEARER);
-                    }
-                });
-
-                // 设置重定向URI
-                List<String> redirectUriList = objectMapper.readValue(redirectUris, new TypeReference<List<String>>() {});
-                redirectUriList.forEach(builder::redirectUri);
-
-                // 设置scope
-                List<String> scopeList = objectMapper.readValue(scopes, new TypeReference<List<String>>() {});
-                scopeList.forEach(builder::scope);
-
-                // 设置客户端设置
-                Map<String, Object> clientSettingsMap = objectMapper.readValue(clientSettings, new TypeReference<Map<String, Object>>() {});
-                builder.clientSettings(ClientSettings.withSettings(clientSettingsMap).build());
-
-                // 设置令牌设置
-                Map<String, Object> tokenSettingsMap = objectMapper.readValue(tokenSettings, new TypeReference<Map<String, Object>>() {});
-                builder.tokenSettings(TokenSettings.withSettings(tokenSettingsMap).build());
-
-                return builder.build();
-            } catch (Exception e) {
-                throw new RuntimeException("Error mapping RegisteredClient", e);
+                map.put("clientSettings", objectMapper.readValue(rs.getString("client_settings"), Map.class));
+                map.put("tokenSettings", objectMapper.readValue(rs.getString("token_settings"), Map.class));
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
             }
-        }, resourceId);
+            return map;
+        };
     }
 } 
