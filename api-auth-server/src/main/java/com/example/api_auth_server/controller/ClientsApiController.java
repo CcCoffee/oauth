@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -66,7 +65,7 @@ public class ClientsApiController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> getClients(@RequestParam(required = false) String resourceId) {
+    public ResponseEntity<List<RegisteredClient>> getClients(@RequestParam(required = false) String resourceId) {
         if (resourceId != null && !resourceId.isEmpty()) {
             return ResponseEntity.ok(registeredClientRepository.findByResourceId(resourceId));
         }
