@@ -41,6 +41,11 @@ app:
       password: mykeystorepass
       key-alias: myalias
       key-password: mykeypass
+  admin:
+    username: admin
+    password: admin123
+    role: ADMIN
+
 oauth2:
   migration:
     enabled: true
