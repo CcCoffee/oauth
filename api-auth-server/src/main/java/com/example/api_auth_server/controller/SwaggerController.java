@@ -14,20 +14,20 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 /**
- * Swagger API文档控制器
- * 提供API文档访问及集成Swagger UI的端点
+ * Swagger API document controller
+ * Provides API document access and integrates the endpoint of Swagger UI
  */
 @RestController
 @RequestMapping("/api-docs")
 public class SwaggerController {
 
     /**
-     * 获取API文档
-     * 返回OpenAPI 3.0规范的YAML文档
+     * Get API document
+     * Return the YAML document of OpenAPI 3.0 specification
      */
     @GetMapping(value = "/api.yml", produces = "application/yaml")
     public ResponseEntity<String> getApiYaml() throws IOException {
-        // 从资源目录读取api.yml文件
+        // Read the api.yml file from the resource directory
         Resource resource = new ClassPathResource("static/api.yml");
         String content = new String(Files.readAllBytes(resource.getFile().toPath()), StandardCharsets.UTF_8);
         
@@ -41,23 +41,23 @@ public class SwaggerController {
     }
     
     /**
-     * 提供Swagger UI界面
-     * 重定向到Swagger Editor，并加载本地API文档
+     * Provide Swagger UI interface
+     * Redirect to Swagger Editor and load the local API document
      */
     @GetMapping("/swagger-ui")
     public String getSwaggerUI() {
-        // 返回HTML内容，引导用户访问Swagger Editor
+        // Return HTML content to guide users to access Swagger Editor
         return "<!DOCTYPE html>\n" +
-                "<html lang=\"zh-CN\">\n" +
+                "<html lang=\"en\">\n" +
                 "<head>\n" +
                 "    <meta charset=\"UTF-8\">\n" +
                 "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
-                "    <title>API文档</title>\n" +
+                "    <title>API Document</title>\n" +
                 "</head>\n" +
                 "<body>\n" +
-                "    <h1>OAuth2授权服务API文档</h1>\n" +
-                "    <p>请点击下面的链接查看API文档：</p>\n" +
-                "    <a href=\"https://editor.swagger.io/?url=http://localhost:9000/api-docs/api.yml\" target=\"_blank\">在Swagger Editor中查看</a>\n" +
+                "    <h1>OAuth2 Authorization Service API Document</h1>\n" +
+                "    <p>Please click the link below to view the API document:</p>\n" +
+                "    <a href=\"https://editor.swagger.io/?url=http://localhost:9000/api-docs/api.yml\" target=\"_blank\">View in Swagger Editor</a>\n" +
                 "</body>\n" +
                 "</html>";
     }

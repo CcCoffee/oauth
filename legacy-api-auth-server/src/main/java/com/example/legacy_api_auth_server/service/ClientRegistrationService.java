@@ -15,19 +15,19 @@ public class ClientRegistrationService {
     private PasswordEncoder passwordEncoder;
 
     /**
-     * 向数据库添加客户端
+     * Add a client to the database
      *
-     * @param clientId 客户端ID
-     * @param clientSecret 客户端密钥
-     * @param resourceIds 资源ID列表
-     * @param scope 授权范围
-     * @param authorizedGrantTypes 授权类型
-     * @param webServerRedirectUri 重定向URI
-     * @param authorities 权限
-     * @param accessTokenValidity 访问令牌有效期（秒）
-     * @param refreshTokenValidity 刷新令牌有效期（秒）
-     * @param additionalInformation 附加信息
-     * @param autoApprove 自动批准
+     * @param clientId Client ID
+     * @param clientSecret Client Secret
+     * @param resourceIds Resource ID list
+     * @param scope Authorization scope
+     * @param authorizedGrantTypes Authorized grant types
+     * @param webServerRedirectUri Redirect URI
+     * @param authorities Authorities
+     * @param accessTokenValidity Access token validity (seconds)
+     * @param refreshTokenValidity Refresh token validity (seconds)
+     * @param additionalInformation Additional information
+     * @param autoApprove Auto approve
      */
     public void addClientDetails(
             String clientId,
@@ -42,15 +42,15 @@ public class ClientRegistrationService {
             String additionalInformation,
             String autoApprove) {
 
-        // 检查客户端是否已存在
+        // Check if the client already exists
         if (clientExists(clientId)) {
-            throw new IllegalArgumentException("客户端 '" + clientId + "' 已存在");
+            throw new IllegalArgumentException("Client '" + clientId + "' already exists");
         }
 
-        // 加密客户端密钥
+        // Encrypt the client secret
         String encodedSecret = passwordEncoder.encode(clientSecret);
 
-        // 插入新客户端
+        // Insert new client
         jdbcTemplate.update(
                 "INSERT INTO oauth_client_details " +
                         "(client_id, resource_ids, client_secret, scope, authorized_grant_types, " +
@@ -72,10 +72,10 @@ public class ClientRegistrationService {
     }
 
     /**
-     * 检查客户端是否存在
+     * Check if the client exists
      *
-     * @param clientId 客户端ID
-     * @return 如果客户端存在返回true，否则返回false
+     * @param clientId Client ID
+     * @return Returns true if the client exists, otherwise false
      */
     public boolean clientExists(String clientId) {
         Integer count = jdbcTemplate.queryForObject(
@@ -87,10 +87,10 @@ public class ClientRegistrationService {
     }
 
     /**
-     * 删除客户端
+     * Delete the client
      *
-     * @param clientId 客户端ID
-     * @return 是否成功删除
+     * @param clientId Client ID
+     * @return Whether the deletion was successful
      */
     public boolean removeClientDetails(String clientId) {
         int result = jdbcTemplate.update(

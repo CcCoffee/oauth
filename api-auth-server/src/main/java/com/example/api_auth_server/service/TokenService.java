@@ -4,7 +4,6 @@ import com.example.api_auth_server.model.TokenInfo;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.List;
 
 @Service

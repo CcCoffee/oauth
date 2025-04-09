@@ -13,8 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * OAuth2迁移控制器
- * 提供API接口用于触发数据迁移过程
+ * OAuth2 Migration Controller
+ * Provides API endpoints to trigger data migration processes
  */
 @RestController
 @RequestMapping("/api/admin/migration")
@@ -26,78 +26,78 @@ public class MigrationController {
     private OAuth2MigrationTool migrationTool;
 
     /**
-     * 触发客户端详情迁移
+     * Triggers client details migration
      */
     @PostMapping("/clients")
     public ResponseEntity<Map<String, String>> migrateClients() {
-        logger.info("收到客户端迁移请求");
+        logger.info("Received client migration request");
         
         try {
             migrationTool.migrateClientDetails();
             
             Map<String, String> response = new HashMap<>();
             response.put("status", "success");
-            response.put("message", "客户端数据迁移成功");
+            response.put("message", "Client data migration successful");
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            logger.error("客户端迁移失败", e);
+            logger.error("Client migration failed", e);
             
             Map<String, String> response = new HashMap<>();
             response.put("status", "error");
-            response.put("message", "客户端数据迁移失败：" + e.getMessage());
+            response.put("message", "Client data migration failed: " + e.getMessage());
             
             return ResponseEntity.internalServerError().body(response);
         }
     }
 
     /**
-     * 触发访问令牌迁移
+     * Triggers access token migration
      */
     @PostMapping("/tokens")
     public ResponseEntity<Map<String, String>> migrateTokens() {
-        logger.info("收到令牌迁移请求");
+        logger.info("Received token migration request");
         
         try {
             migrationTool.migrateAccessTokens();
             
             Map<String, String> response = new HashMap<>();
             response.put("status", "success");
-            response.put("message", "令牌数据迁移成功");
+            response.put("message", "Token data migration successful");
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            logger.error("令牌迁移失败", e);
+            logger.error("Token migration failed", e);
             
             Map<String, String> response = new HashMap<>();
             response.put("status", "error");
-            response.put("message", "令牌数据迁移失败：" + e.getMessage());
+            response.put("message", "Token data migration failed: " + e.getMessage());
             
             return ResponseEntity.internalServerError().body(response);
         }
     }
 
     /**
-     * 触发全部数据迁移
+     * Triggers all data migration
      */
     @PostMapping("/all")
     public ResponseEntity<Map<String, String>> migrateAll() {
-        logger.info("收到全部数据迁移请求");
+        logger.info("Received all data migration request");
         
         try {
             migrationTool.migrateAll();
             
             Map<String, String> response = new HashMap<>();
             response.put("status", "success");
-            response.put("message", "所有数据迁移成功");
+            response.put("message", "All data migration successful");
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            logger.error("全部数据迁移失败", e);
+            logger.error("All data migration failed", e);
             
             Map<String, String> response = new HashMap<>();
             response.put("status", "error");
-            response.put("message", "数据迁移失败：" + e.getMessage());
+            response.put("message", "Data migration failed: " + e.getMessage());
             
             return ResponseEntity.internalServerError().body(response);
         }

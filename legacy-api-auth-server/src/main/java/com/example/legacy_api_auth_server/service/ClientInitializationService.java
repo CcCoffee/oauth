@@ -27,9 +27,9 @@ public class ClientInitializationService implements CommandLineRunner {
 
     private void initializeDefaultClients() {
         try {
-            // 添加不透明令牌客户端
+            // Add opaque token client
             if (!clientRegistrationService.clientExists("opaque-client")) {
-                logger.info("正在初始化 opaque-client...");
+                logger.info("Initializing opaque-client...");
                 Map<String, String> additionalInfo = new HashMap<>();
                 additionalInfo.put("type", "external");
                 clientRegistrationService.addClientDetails(
@@ -45,12 +45,12 @@ public class ClientInitializationService implements CommandLineRunner {
                         objectMapper.writeValueAsString(additionalInfo),
                         null
                 );
-                logger.info("opaque-client 初始化完成");
+                logger.info("opaque-client initialization completed");
             }
 
-            // 添加JWT令牌客户端
+            // Add JWT token client
             if (!clientRegistrationService.clientExists("jwt-client")) {
-                logger.info("正在初始化 jwt-client...");
+                logger.info("Initializing jwt-client...");
                 Map<String, String> additionalInfo = new HashMap<>();
                 additionalInfo.put("profile_id", "opaque-client");
                 clientRegistrationService.addClientDetails(
@@ -66,10 +66,10 @@ public class ClientInitializationService implements CommandLineRunner {
                         objectMapper.writeValueAsString(additionalInfo),
                         null
                 );
-                logger.info("jwt-client 初始化完成");
+                logger.info("jwt-client initialization completed");
             }
         } catch (Exception e) {
-            logger.error("初始化客户端失败", e);
+            logger.error("Failed to initialize clients", e);
         }
     }
 } 

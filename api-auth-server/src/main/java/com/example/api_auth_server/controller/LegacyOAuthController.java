@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 兼容旧版OAuth2端点的控制器
+ * Controller for legacy OAuth2 endpoints
  */
 @RestController
 public class LegacyOAuthController {
@@ -33,42 +33,42 @@ public class LegacyOAuthController {
     private String keyAlias;
     
     /**
-     * 提供公钥信息的接口，兼容spring-cloud-starter-oauth2
-     * 返回PEM格式的公钥
-     * @return 包含公钥的Map
+     * Provides public key information interface, compatible with spring-cloud-starter-oauth2
+     * Returns the public key in PEM format
+     * @return Map containing the public key
      */
     @GetMapping("/oauth/token_key")
     public Map<String, String> getTokenKey() {
         try {
-            // 从类路径加载密钥库文件
+            // Load the keystore file from the class path
             ClassPathResource resource = new ClassPathResource(keystorePath);
             KeyStore keyStore = KeyStore.getInstance("JKS");
             keyStore.load(resource.getInputStream(), keystorePassword.toCharArray());
             
-            // 获取证书
+            // Get the certificate
             Certificate cert = keyStore.getCertificate(keyAlias);
             RSAPublicKey publicKey = (RSAPublicKey) cert.getPublicKey();
             
-            // 转换为PEM格式的公钥
+            // Convert to PEM format public key
             byte[] encoded = publicKey.getEncoded();
             String publicKeyPEM =
                     "-----BEGIN PUBLIC KEY-----\n" +
                     Base64.getEncoder().encodeToString(encoded) +
                     "\n-----END PUBLIC KEY-----";
 
-            // 构建响应Map
+            // Build the response Map
             Map<String, String> result = new HashMap<>();
             result.put("alg", "SHA256withRSA");
             result.put("value", publicKeyPEM);
             
             return result;
         } catch (Exception e) {
-            throw new RuntimeException("获取公钥失败: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to get public key: " + e.getMessage(), e);
         }
     }
 
     /**
-     * 拦截/oauth/token请求并转发到/oauth2/token
+     * Intercepts /oauth/token requests and forwards them to /oauth2/token
      */
     @RequestMapping(value = "/oauth/token", method = {RequestMethod.POST, RequestMethod.GET})
     public void handleTokenRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {

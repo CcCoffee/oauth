@@ -47,20 +47,20 @@ public class TokenExportController {
             for (Map<String, Object> row : rows) {
                 Map<String, Object> exportableToken = new HashMap<>();
                 
-                // 复制原始数据
+                // Copy original data
                 for (Map.Entry<String, Object> entry : row.entrySet()) {
                     String key = entry.getKey();
                     Object value = entry.getValue();
                     
-                    // 对token和authentication列进行特殊处理
+                    // Special handling for token and authentication columns
                     if ("token".equals(key) && value instanceof byte[]) {
                         try {
                             OAuth2AccessToken accessToken = (OAuth2AccessToken) SerializationUtils.deserialize((byte[]) value);
                             String tokenJson = objectMapper.writeValueAsString(accessToken);
                             exportableToken.put(key, tokenJson);
                         } catch (Exception e) {
-                            logger.error("反序列化token失败", e);
-                            exportableToken.put(key, "序列化错误");
+                            logger.error("Failed to deserialize token", e);
+                            exportableToken.put(key, "Serialization error");
                         }
                     } else if ("authentication".equals(key) && value instanceof byte[]) {
                         try {
@@ -68,11 +68,11 @@ public class TokenExportController {
                             String authJson = objectMapper.writeValueAsString(authentication);
                             exportableToken.put(key, authJson);
                         } catch (Exception e) {
-                            logger.error("反序列化authentication失败", e);
-                            exportableToken.put(key, "序列化错误");
+                            logger.error("Failed to deserialize authentication", e);
+                            exportableToken.put(key, "Serialization error");
                         }
                     } else {
-                        // 其他列直接添加
+                        // Directly add other columns
                         exportableToken.put(key, value != null ? value.toString() : "");
                     }
                 }
@@ -80,7 +80,7 @@ public class TokenExportController {
                 exportableTokens.add(exportableToken);
             }
             
-            // 生成CSV
+            // Generate CSV
             CsvMapper csvMapper = new CsvMapper();
             List<String> columns = List.of(
                     "token_id", "token", "authentication_id", "user_name", 
@@ -96,7 +96,7 @@ public class TokenExportController {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             csvMapper.writer(schema).writeValues(baos).writeAll(exportableTokens);
             
-            // 设置HTTP响应头
+            // Set HTTP response headers
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.parseMediaType("text/csv"));
             headers.setContentDispositionFormData("attachment", "oauth_access_tokens.csv");
@@ -106,7 +106,7 @@ public class TokenExportController {
                     .body(baos.toByteArray());
             
         } catch (IOException e) {
-            logger.error("导出CSV文件失败", e);
+            logger.error("Failed to export CSV file", e);
             return ResponseEntity.internalServerError().build();
         }
     }

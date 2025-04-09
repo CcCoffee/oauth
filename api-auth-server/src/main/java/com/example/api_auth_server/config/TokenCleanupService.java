@@ -15,9 +15,9 @@ public class TokenCleanupService {
         this.jdbcTemplate = jdbcTemplate;
     }
     
-    @Scheduled(cron = "0 */5 * * * *") // 每5分钟执行一次
+    @Scheduled(cron = "0 */5 * * * *") // Executes every 5 minutes
     public void cleanupExpiredTokens() {
-        // 删除过期的访问令牌记录
+        // Deletes expired access token records
         String sql = "DELETE FROM oauth2_authorization WHERE access_token_expires_at < CURRENT_TIMESTAMP";
         int deletedCount = jdbcTemplate.update(sql);
         

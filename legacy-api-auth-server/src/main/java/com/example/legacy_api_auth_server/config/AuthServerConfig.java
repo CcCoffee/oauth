@@ -54,14 +54,14 @@ public class AuthServerConfig extends AuthorizationServerConfigurerAdapter {
     public JwtAccessTokenConverter accessTokenConverter() {
         JwtAccessTokenConverter converter = new JwtAccessTokenConverter();
         
-        // 从密钥库加载密钥对
+        // Load key pair from keystore
         KeyStoreKeyFactory keyStoreKeyFactory = new KeyStoreKeyFactory(
                 new ClassPathResource(keystorePath), 
                 keystorePassword.toCharArray()
         );
         KeyPair keyPair = keyStoreKeyFactory.getKeyPair(keyAlias, keyPassword.toCharArray());
         
-        // 设置密钥对到转换器
+        // Set key pair to converter
         converter.setKeyPair(keyPair);
         
         return converter;
@@ -89,27 +89,27 @@ public class AuthServerConfig extends AuthorizationServerConfigurerAdapter {
     @Override
     public void configure(AuthorizationServerSecurityConfigurer security) throws Exception {
         security
-            .tokenKeyAccess("permitAll()")      // 允许访问/oauth/token_key端点
-            .checkTokenAccess("isAuthenticated()") // 允许已认证客户端访问/oauth/check_token端点
-            .allowFormAuthenticationForClients(); // 允许客户端表单认证
+            .tokenKeyAccess("permitAll()")      // Allow access to /oauth/token_key endpoint
+            .checkTokenAccess("isAuthenticated()") // Allow authenticated clients to access /oauth/check_token endpoint
+            .allowFormAuthenticationForClients(); // Allow client form authentication
     }
 
     @Override
     public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-        // 使用JDBC配置，从数据库读取客户端信息
+        // Configure using JDBC, read client information from database
         clients.jdbc(dataSource)
                .passwordEncoder(passwordEncoder);
     }
 
     @Override
     public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
-        // 配置令牌增强器链，同时支持JWT格式
+        // Configure token enhancer chain, support JWT format
         TokenEnhancerChain tokenEnhancerChain = new TokenEnhancerChain();
         tokenEnhancerChain.setTokenEnhancers(Arrays.asList(accessTokenConverter()));
         
         endpoints
             .authenticationManager(authenticationManager)
-            .tokenStore(jdbcTokenStore())  // 使用JDBC令牌存储
+            .tokenStore(jdbcTokenStore())  // Use JDBC token store
             .tokenEnhancer(tokenEnhancerChain)
             .accessTokenConverter(accessTokenConverter());
     }

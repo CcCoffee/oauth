@@ -11,8 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * OAuth2迁移控制器
- * 提供API接口触发数据迁移
+ * OAuth2 Migration Controller
+ * Provides API endpoints to trigger data migration
  */
 @RestController
 @RequestMapping("/api/migration")
@@ -22,8 +22,8 @@ public class OAuth2MigrationController {
     private OAuth2MigrationTool migrationTool;
     
     /**
-     * 迁移客户端数据
-     * 需要管理员权限
+     * Migrates client data
+     * Requires admin role
      */
     @PostMapping("/clients")
     @PreAuthorize("hasRole('ADMIN')")
@@ -33,21 +33,21 @@ public class OAuth2MigrationController {
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "客户端数据迁移成功");
+            response.put("message", "Client data migration successful");
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "客户端数据迁移失败: " + e.getMessage());
+            response.put("message", "Client data migration failed: " + e.getMessage());
             
             return ResponseEntity.internalServerError().body(response);
         }
     }
     
     /**
-     * 执行完整迁移
-     * 需要管理员权限
+     * Executes full migration
+     * Requires admin role
      */
     @PostMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
@@ -57,13 +57,13 @@ public class OAuth2MigrationController {
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "OAuth2数据完整迁移成功");
+            response.put("message", "OAuth2 data full migration successful");
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "OAuth2数据迁移失败: " + e.getMessage());
+            response.put("message", "OAuth2 data migration failed: " + e.getMessage());
             
             return ResponseEntity.internalServerError().body(response);
         }

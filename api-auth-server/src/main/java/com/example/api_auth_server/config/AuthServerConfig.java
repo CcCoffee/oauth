@@ -57,7 +57,7 @@ public class AuthServerConfig {
 
     @Bean
     public JWKSource<SecurityContext> jwkSource() {
-        // 使用KeyStoreJwkService从密钥库获取JWK
+        // Use KeyStoreJwkService to get JWK from the keystore
         return keyStoreJwkService.getJwkSource();
     }
 
@@ -75,7 +75,7 @@ public class AuthServerConfig {
     public OAuth2TokenGenerator<?> tokenGenerator(JWKSource<SecurityContext> jwkSource, JwtTokenCustomizer jwtTokenCustomizer) {
         JwtEncoder jwtEncoder = new NimbusJwtEncoder(jwkSource);
         JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder);
-        // 设置JWT token的自定义器
+        // Set the customizer for the JWT token
         jwtGenerator.setJwtCustomizer(jwtTokenCustomizer);
 
         UUIDAuth2TokenGenerator uuidAuth2TokenGenerator = new UUIDAuth2TokenGenerator();

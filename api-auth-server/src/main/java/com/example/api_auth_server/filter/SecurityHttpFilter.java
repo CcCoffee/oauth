@@ -36,34 +36,33 @@ public class SecurityHttpFilter extends OncePerRequestFilter {
     public SecurityHttpFilter(AdminProperties adminProperties) {
         this.adminProperties = adminProperties;
     }
-
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) 
             throws ServletException, IOException {
         
-        // 检查请求路径
+        // Check the request path
         String requestURI = request.getRequestURI();
         
-        // 允许公共路径访问
+        // Allow access to public paths
         if (isPublicPath(requestURI)) {
             filterChain.doFilter(request, response);
             return;
         }
         
-        // 针对管理员路径进行权限检查
+        // Check permissions for admin paths
         if (isAdminPath(requestURI)) {
             if (isAdmin(request)) {
                 filterChain.doFilter(request, response);
                 return;
             } else {
-                // 如果没有提供基本认证，则发送401响应并要求认证
+                // If no basic authentication is provided, send a 401 response and request authentication
                 response.setHeader("WWW-Authenticate", "Basic realm=\"Admin Area\"");
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
             }
         }
         
-        // 允许其他所有请求通过
+        // Allow all other requests to pass
         filterChain.doFilter(request, response);
     }
     
@@ -78,20 +77,20 @@ public class SecurityHttpFilter extends OncePerRequestFilter {
     }
     
     private boolean isAdmin(HttpServletRequest request) {
-        // 从Authorization头中获取基本认证信息
+        // Get basic authentication information from the Authorization header
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Basic ")) {
-            // 解码Base64编码的凭证
+            // Decode Base64 encoded credentials
             String base64Credentials = authHeader.substring("Basic ".length());
             String credentials = new String(Base64.getDecoder().decode(base64Credentials), StandardCharsets.UTF_8);
             
-            // 凭证的格式是"username:password"
+            // The format of the credentials is "username:password"
             final String[] values = credentials.split(":", 2);
             if (values.length == 2) {
                 String username = values[0];
                 String password = values[1];
                 
-                // 检查用户名和密码是否与配置匹配
+                // Check if the username and password match the configuration
                 return adminProperties.getUsername().equals(username) && 
                        adminProperties.getPassword().equals(password) && 
                        "ADMIN".equals(adminProperties.getRole());
@@ -100,7 +99,7 @@ public class SecurityHttpFilter extends OncePerRequestFilter {
         return false;
     }
 
-    // 为避免CORS问题，添加一个过滤器配置
+    // To avoid CORS issues, add a filter configuration
     @Component
     public static class CorsFilter extends OncePerRequestFilter {
         @Override

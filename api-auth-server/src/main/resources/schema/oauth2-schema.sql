@@ -1,9 +1,8 @@
 -- OAuth2 Authorization Schema
 
--- 对于标准的client credentials 认证，只需要 oauth2_registered_client 和 oauth2_jwt_keys 表。如果需要额外启用 refresh token 时，才需要 oauth2_authorization 表
--- 对于机器到机器通信场景中不推介启用 refresh token
+-- For standard client credentials authentication, only the oauth2_registered_client and oauth2_jwt_keys tables are needed. If you need to enable refresh token, then the oauth2_authorization table is required. For machine-to-machine communication scenarios, it is not recommended to enable refresh token.
 
--- 注册客户端表
+-- Registered Client Table
 CREATE TABLE IF NOT EXISTS oauth2_registered_client (
     id VARCHAR(100) NOT NULL,
     client_id VARCHAR(100) NOT NULL,
@@ -21,7 +20,7 @@ CREATE TABLE IF NOT EXISTS oauth2_registered_client (
     PRIMARY KEY (id)
 );
 
--- 授权信息表
+-- Authorization Information Table
 CREATE TABLE IF NOT EXISTS oauth2_authorization (
     id VARCHAR(100) NOT NULL,
     registered_client_id VARCHAR(100) NOT NULL,
@@ -60,7 +59,7 @@ CREATE TABLE IF NOT EXISTS oauth2_authorization (
     PRIMARY KEY (id)
 );
 
--- 授权同意表
+-- Authorization Consent Table
 CREATE TABLE IF NOT EXISTS oauth2_authorization_consent (
     registered_client_id VARCHAR(100) NOT NULL,
     principal_name VARCHAR(200) NOT NULL,
@@ -68,7 +67,7 @@ CREATE TABLE IF NOT EXISTS oauth2_authorization_consent (
     PRIMARY KEY (registered_client_id, principal_name)
 );
 
--- JWT密钥表 - 用于集群环境共享同一密钥
+-- JWT Keys Table - For sharing the same key in a cluster environment
 --CREATE TABLE IF NOT EXISTS oauth2_jwt_keys (
 --    id VARCHAR(36) NOT NULL,
 --    key_id VARCHAR(36) NOT NULL,
@@ -79,7 +78,7 @@ CREATE TABLE IF NOT EXISTS oauth2_authorization_consent (
 --    PRIMARY KEY (id)
 --);
 
--- 创建索引
+-- Create Indexes
 CREATE INDEX IF NOT EXISTS oauth2_authorization_client_id_idx 
 ON oauth2_authorization (registered_client_id);
 

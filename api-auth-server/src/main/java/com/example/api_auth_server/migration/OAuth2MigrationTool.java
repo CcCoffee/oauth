@@ -39,9 +39,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 /**
- * OAuth2数据迁移工具
- * 用于将旧版OAuth2数据（oauth_client_details, oauth_access_token等）
- * 迁移到新版OAuth2数据（oauth2_registered_client, oauth2_authorization等）
+ * OAuth2 Data Migration Tool
+ * Used to migrate legacy OAuth2 data (oauth_client_details, oauth_access_token, etc.)
+ * to new OAuth2 data (oauth2_registered_client, oauth2_authorization, etc.)
  */
 @Component
 public class OAuth2MigrationTool {
@@ -64,12 +64,12 @@ public class OAuth2MigrationTool {
     private org.springframework.core.env.Environment environment;
     
     /**
-     * 迁移客户端详情数据
-     * 从oauth_client_details表迁移到oauth2_registered_client表
+     * Migrate client details data
+     * Migrate from oauth_client_details table to oauth2_registered_client table
      */
     @Transactional
     public void migrateClientDetails() {
-        logger.info("开始迁移OAuth2客户端数据...");
+        logger.info("Starting OAuth2 client data migration...");
         
         List<Map<String, Object>> clients = jdbcTemplate.queryForList("SELECT * FROM oauth_client_details");
         int successCount = 0;
@@ -78,94 +78,94 @@ public class OAuth2MigrationTool {
         for (Map<String, Object> client : clients) {
             try {
                 String clientId = (String) client.get("client_id");
-                logger.info("正在迁移客户端: {}", clientId);
+                logger.info("Migrating client: {}", clientId);
                 
-                // 检查客户端是否已经存在
+                // Check if client already exists
                 RegisteredClient existingClient = registeredClientRepository.findByClientId(clientId);
                 if (existingClient != null) {
-                    logger.info("客户端 {} 已存在于新表中，跳过", clientId);
+                    logger.info("Client {} already exists in the new table, skipping", clientId);
                     continue;
                 }
                 
-                // 获取客户端密钥
+                // Get client secret
                 String clientSecret = (String) client.get("client_secret");
                 
-                // 处理授权类型
+                // Process grant types
                 Set<AuthorizationGrantType> grantTypes = convertGrantTypesToSet((String) client.get("authorized_grant_types"));
                 
-                // 处理重定向URI
+                // Process redirect URIs
                 Set<String> redirectUris = convertToSet((String) client.get("web_server_redirect_uri"));
                 
-                // 处理作用域
+                // Process scopes
                 Set<String> scopes = convertToSet((String) client.get("scope"));
                 
-                // 处理资源ID
+                // Process resource IDs
                 String resourceIds = (String) client.get("resource_ids");
 
-                // 处理额外信息
+                // Process additional information
                 String additionalInfo = (String) client.get("additional_information");
                 
-                // 创建TokenSettings
+                // Create TokenSettings
                 TokenSettings tokenSettings = buildTokenSettings(client);
                 
-                // 创建ClientSettings
+                // Create ClientSettings
                 ClientSettings clientSettings = buildClientSettings(resourceIds, additionalInfo);
                 
-                // 创建RegisteredClient
+                // Create RegisteredClient
                 RegisteredClient.Builder clientBuilder = RegisteredClient.withId(UUID.randomUUID().toString())
                     .clientId(clientId)
                     .clientIdIssuedAt(java.time.Instant.now());
                 
-                // 设置客户端密钥（如果有）
+                // Set client secret (if any)
                 if (clientSecret != null && !clientSecret.isEmpty()) {
                     clientBuilder.clientSecret(clientSecret);
                 }
                 
-                // 设置客户端名称
+                // Set client name
                 clientBuilder.clientName(clientId);
                 
-                // 设置认证方式
+                // Set authentication methods
                 clientBuilder.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                              .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST);
                 
-                // 设置授权类型
+                // Set grant types
                 for (AuthorizationGrantType grantType : grantTypes) {
                     clientBuilder.authorizationGrantType(grantType);
                 }
                 
-                // 设置重定向URI
+                // Set redirect URIs
                 for (String uri : redirectUris) {
                     clientBuilder.redirectUri(uri);
                 }
                 
-                // 设置作用域
+                // Set scopes
                 for (String scope : scopes) {
                     clientBuilder.scope(scope);
                 }
                 
-                // 设置令牌设置和客户端设置
+                // Set token settings and client settings
                 clientBuilder.tokenSettings(tokenSettings)
                             .clientSettings(clientSettings);
                 
-                // 创建RegisteredClient实例
+                // Create RegisteredClient instance
                 RegisteredClient registeredClient = clientBuilder.build();
                 
-                // 保存到仓库
+                // Save to repository
                 registeredClientRepository.save(registeredClient);
                 
                 successCount++;
-                logger.info("成功迁移客户端: {}", clientId);
+                logger.info("Successfully migrated client: {}", clientId);
             } catch (Exception e) {
                 failCount++;
-                logger.error("迁移客户端失败: {}", client.get("client_id"), e);
+                logger.error("Failed to migrate client: {}", client.get("client_id"), e);
             }
         }
         
-        logger.info("客户端数据迁移完成。成功: {}, 失败: {}", successCount, failCount);
+        logger.info("Client data migration completed. Success: {}, Failures: {}", successCount, failCount);
     }
     
     /**
-     * 将字符串转换为Set集合
+     * Convert string to Set
      */
     private Set<String> convertToSet(String commaSeparatedString) {
         Set<String> result = new HashSet<>();
@@ -181,13 +181,13 @@ public class OAuth2MigrationTool {
     }
     
     /**
-     * 转换授权类型为Set集合
+     * Convert grant types to Set
      */
     private Set<AuthorizationGrantType> convertGrantTypesToSet(String authorizedGrantTypes) {
         Set<AuthorizationGrantType> grantTypes = new HashSet<>();
         
         if (!StringUtils.hasText(authorizedGrantTypes)) {
-            // 默认授权类型
+            // Default grant type
             grantTypes.add(AuthorizationGrantType.CLIENT_CREDENTIALS);
             return grantTypes;
         }
@@ -197,8 +197,8 @@ public class OAuth2MigrationTool {
         for (String type : types) {
             switch (type.trim()) {
                 case "password":
-                    // 新版OAuth2已不支持password模式，可以考虑替代方案或特殊处理
-                    logger.warn("新版OAuth2不推荐使用password授权类型，请考虑替代方案");
+                    // The password grant type is no longer supported in the new OAuth2, consider alternatives or special handling
+                    logger.warn("New OAuth2 does not recommend using password authorization type, consider alternative solutions");
                     break;
                 case "authorization_code":
                     grantTypes.add(AuthorizationGrantType.AUTHORIZATION_CODE);
@@ -210,17 +210,17 @@ public class OAuth2MigrationTool {
                     grantTypes.add(AuthorizationGrantType.CLIENT_CREDENTIALS);
                     break;
                 case "implicit":
-                    // 新版OAuth2不再推荐implicit模式
-                    logger.warn("新版OAuth2不推荐使用implicit授权类型，请考虑替代方案");
+                    // New OAuth2 no longer recommends implicit mode
+                    logger.warn("New OAuth2 does not recommend using implicit authorization type, consider alternative solutions");
                     break;
                 default:
-                    // 其他自定义授权类型
+                    // Other custom authorization types
                     grantTypes.add(new AuthorizationGrantType(type.trim()));
             }
         }
         
         if (grantTypes.isEmpty()) {
-            // 如果没有有效的授权类型，使用默认值
+            // If there are no valid authorization types, use the default value
             grantTypes.add(AuthorizationGrantType.CLIENT_CREDENTIALS);
         }
         
@@ -228,14 +228,14 @@ public class OAuth2MigrationTool {
     }
     
     /**
-     * 构建客户端设置
+     * Build client settings
      */
     private ClientSettings buildClientSettings(String resourceIds, String additionalInfo) {
         ClientSettings.Builder builder = ClientSettings.builder()
                 .requireAuthorizationConsent(false)
                 .requireProofKey(false);
         
-        // 将resource_id保存到client settings中
+        // Save resource_id to client settings
         if (StringUtils.hasText(resourceIds)) {
             builder.setting("resource.id", resourceIds);
         }
@@ -255,12 +255,12 @@ public class OAuth2MigrationTool {
     }
     
     /**
-     * 构建令牌设置
+     * Build token settings
      */
     private TokenSettings buildTokenSettings(Map<String, Object> client) {
         TokenSettings.Builder builder = TokenSettings.builder();
         
-        // 访问令牌有效期（秒）
+        // Access token validity period (seconds)
         Integer accessTokenValidity = (Integer) client.get("access_token_validity");
         if (accessTokenValidity != null) {
             builder.accessTokenTimeToLive(Duration.ofSeconds(accessTokenValidity));
@@ -268,15 +268,15 @@ public class OAuth2MigrationTool {
             throw new RuntimeException("accessTokenValidity not found");
         }
 
-        // 刷新令牌有效期（秒）
+        // Refresh token validity period (seconds)
 //        Integer refreshTokenValidity = (Integer) client.get("refresh_token_validity");
 //        if (refreshTokenValidity != null) {
 //            builder.refreshTokenTimeToLive(Duration.ofSeconds(refreshTokenValidity));
 //        } else {
-//            builder.refreshTokenTimeToLive(Duration.ofDays(30)); // 默认30天
+//            builder.refreshTokenTimeToLive(Duration.ofDays(30)); // Default 30 days
 //        }
         
-        // 令牌格式 - 使用 SELF_CONTAINED（JWT）或 REFERENCE (UUID)
+        // Token format - Use SELF_CONTAINED (JWT) or REFERENCE (UUID)
         String additionalInfo = (String) client.get("additional_information");
         if (StringUtils.hasText(additionalInfo)) {
             try {
@@ -296,24 +296,24 @@ public class OAuth2MigrationTool {
     }
     
     /**
-     * 迁移访问令牌数据
-     * 从oauth_access_token表迁移到oauth2_authorization表
-     * 注：由于旧版令牌通常是序列化对象，实际迁移较为复杂，可能需要专门的反序列化逻辑
+     * Migrate access token data
+     * Migrate from oauth_access_token table to oauth2_authorization table
+     * Note: Since legacy tokens are usually serialized objects, actual migration is more complex, possibly requiring specialized deserialization logic
      */
     @Transactional
     public void migrateAccessTokens() {
-        logger.info("开始迁移OAuth2令牌数据...");
+        logger.info("Starting OAuth2 token data migration...");
         
         try {
-            // 从遗留系统API获取Token数据
+            // Get Token data from legacy system API
             List<Map<String, Object>> importedTokens = fetchTokenDataFromLegacySystem();
             
             if (importedTokens.isEmpty()) {
-                logger.warn("没有找到可迁移的令牌数据");
+                logger.warn("No token data found to migrate");
                 return;
             }
             
-            logger.info("找到{}个令牌需要迁移", importedTokens.size());
+            logger.info("Found {} tokens to migrate", importedTokens.size());
             
             int successCount = 0;
             int failCount = 0;
@@ -321,37 +321,37 @@ public class OAuth2MigrationTool {
             for (Map<String, Object> tokenData : importedTokens) {
                 String clientId = (String) tokenData.get("client_id");
                 if (clientId == null || clientId.isEmpty()) {
-                    logger.warn("跳过迁移：客户端ID为空");
+                    logger.warn("Skipping migration: Client ID is empty");
                     failCount++;
                     continue;
                 }
                 
-                // 查找对应的RegisteredClient
+                // Find corresponding RegisteredClient
                 RegisteredClient registeredClient = registeredClientRepository.findByClientId(clientId);
                 if (registeredClient == null) {
-                    logger.warn("跳过迁移：找不到客户端 {}", clientId);
+                    logger.warn("Skipping migration: Client {} not found", clientId);
                     failCount++;
                     continue;
                 }
                 
                 try {
-                    // 从JSON解析出OAuth2Authentication对象
+                    // Parse OAuth2Authentication object from JSON
                     String authJson = (String) tokenData.get("authentication");
                     Map<String, Object> authenticationMap = objectMapper.readValue(authJson, Map.class);
                     
-                    // 验证是否为client_credentials授权类型
+                    // Verify whether it's client_credentials authorization type
                     if (authenticationMap.containsKey("oauth2Request")) {
                         Map<String, Object> oauth2Request = (Map<String, Object>) authenticationMap.get("oauth2Request");
                         if (oauth2Request.containsKey("grantType")) {
                             String grantType = (String) oauth2Request.get("grantType");
                             if (!"client_credentials".equals(grantType)) {
-                                logger.info("跳过非client_credentials授权类型的令牌: {}", grantType);
+                                logger.info("Skipping non-client_credentials authorization type token: {}", grantType);
                                 continue;
                             }
                         }
                     }
                     
-                    // 解析令牌值和授权作用域
+                    // Parse token value and authorization scope
                     String tokenJson = (String) tokenData.get("token");
                     Map<String, Object> tokenMap = objectMapper.readValue(tokenJson, Map.class);
                     
@@ -362,10 +362,10 @@ public class OAuth2MigrationTool {
                         scopes.addAll(scopeList);
                     }
                     
-                    // 解析过期时间
+                    // Parse expiration time
                     long expiresInSeconds = (Integer) tokenMap.get("expires_in");
                     
-                    // 创建访问令牌
+                    // Create access token
                     OAuth2AccessToken accessToken = new OAuth2AccessToken(
                             OAuth2AccessToken.TokenType.BEARER,
                             tokenValue,
@@ -374,20 +374,20 @@ public class OAuth2MigrationTool {
                             scopes
                     );
                     
-                    // 创建身份验证主体
+                    // Create authentication principal
                     OAuth2ClientAuthenticationToken clientPrincipal = new OAuth2ClientAuthenticationToken(
                             registeredClient,
                             ClientAuthenticationMethod.CLIENT_SECRET_BASIC,
                             null
                     );
                     
-                    // 创建授权对象
+                    // Create authorization object
                     OAuth2Authorization.Builder authorizationBuilder = OAuth2Authorization.withRegisteredClient(registeredClient)
                             .principalName(clientId)
                             .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                             .authorizedScopes(scopes);
                     
-                    // 设置Token属性
+                    // Set Token attributes
                     authorizationBuilder.token(
                             accessToken,
                             metadata -> {
@@ -396,7 +396,7 @@ public class OAuth2MigrationTool {
                             }
                     );
                     
-                    // 保存授权对象
+                    // Save authorization object
                     OAuth2Authorization authorization = authorizationBuilder.build();
                     jdbcTemplate.update(
                             "INSERT INTO oauth2_authorization (id, registered_client_id, principal_name, authorization_grant_type, attributes, state, " +
@@ -419,40 +419,40 @@ public class OAuth2MigrationTool {
                     );
                     
                     successCount++;
-                    logger.info("成功迁移令牌: {}", tokenValue);
+                    logger.info("Successfully migrated token: {}", tokenValue);
                 } catch (Exception e) {
                     failCount++;
-                    logger.error("迁移令牌失败: {}", tokenData.get("token_id"), e);
+                    logger.error("Token migration failed: {}", tokenData.get("token_id"), e);
                 }
             }
             
-            logger.info("令牌迁移完成。成功: {}, 失败: {}", successCount, failCount);
+            logger.info("Token migration completed. Success: {}, Failures: {}", successCount, failCount);
             
         } catch (Exception e) {
-            logger.error("令牌迁移过程发生错误", e);
-            throw new RuntimeException("令牌迁移失败", e);
+            logger.error("Token migration process error", e);
+            throw new RuntimeException("Token migration failed", e);
         }
     }
     
     /**
-     * 从遗留系统获取Token数据
+     * Get Token data from legacy system
      */
     private List<Map<String, Object>> fetchTokenDataFromLegacySystem() {
-        // 从配置获取遗留系统URL
+        // Get legacy system URL from configuration
         String legacyServerUrl = environment.getProperty("oauth2.migration.legacy-server.url", "http://localhost:8080");
         String legacyApiUrl = legacyServerUrl + "/api/admin/token/export-csv";
         
-        logger.info("正在从遗留系统获取Token数据: {}", legacyApiUrl);
+        logger.info("Getting Token data from legacy system: {}", legacyApiUrl);
         
-        // 创建带有Basic认证的RestTemplate
+        // Create RestTemplate with Basic authentication
         RestTemplate restTemplate = new RestTemplate();
         
-        // 添加Basic认证头
+        // Add Basic authentication header
         HttpHeaders headers = new HttpHeaders();
         String username = environment.getProperty("oauth2.migration.legacy-server.username", "admin");
         String password = environment.getProperty("oauth2.migration.legacy-server.password", "admin123");
         
-        // 创建Base64编码的认证信息
+        // Create Base64 encoded authentication information
         String auth = username + ":" + password;
         byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes(StandardCharsets.UTF_8));
         String authHeader = "Basic " + new String(encodedAuth);
@@ -469,17 +469,17 @@ public class OAuth2MigrationTool {
             );
             
             if (!response.getStatusCode().is2xxSuccessful()) {
-                logger.error("获取Token数据失败，状态码: {}", response.getStatusCode());
+                logger.error("Failed to get Token data, status code: {}", response.getStatusCode());
                 return Collections.emptyList();
             }
             
             String csvContent = response.getBody();
             if (csvContent == null || csvContent.isEmpty()) {
-                logger.warn("获取的CSV内容为空");
+                logger.warn("CSV content is empty");
                 return Collections.emptyList();
             }
             
-            // 解析CSV数据
+            // Parse CSV data
             List<Map<String, Object>> tokens = new ArrayList<>();
             
             CsvMapper csvMapper = new CsvMapper();
@@ -492,36 +492,36 @@ public class OAuth2MigrationTool {
                 tokens.add(new HashMap<>(iterator.next()));
             }
             
-            logger.info("成功从遗留系统获取{}个Token数据", tokens.size());
+            logger.info("Successfully got {} Token data from legacy system", tokens.size());
             return tokens;
             
         } catch (Exception e) {
-            logger.error("从遗留系统获取Token数据失败", e);
+            logger.error("Failed to get Token data from legacy system", e);
             return Collections.emptyList();
         }
     }
     
     /**
-     * 将Map对象序列化为JSON字符串
+     * Convert Map object to JSON string
      */
     private String writeMap(Map<String, Object> map) throws JsonProcessingException {
         return objectMapper.writeValueAsString(map);
     }
     
     /**
-     * 将Set对象序列化为JSON字符串
+     * Convert Set object to JSON string
      */
     private String writeSet(Set<String> set) throws JsonProcessingException {
         return objectMapper.writeValueAsString(set);
     }
     
     /**
-     * 执行完整迁移
+     * Execute full migration
      */
     @Transactional
     public void migrateAll() {
         migrateClientDetails();
-        // 执行令牌迁移
+        // Execute token migration
         migrateAccessTokens();
     }
 } 

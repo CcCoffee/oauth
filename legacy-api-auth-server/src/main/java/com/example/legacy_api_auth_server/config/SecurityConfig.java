@@ -27,13 +27,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
             .csrf().disable()
             .authorizeRequests()
-                // 保护客户端管理API，只允许ADMIN角色访问
+                // Protect client management API, only allow ADMIN role access
                 .antMatchers("/api/clients/**").hasRole("ADMIN")
-                // 保护令牌导出API，只允许ADMIN角色访问
+                // Protect token export API, only allow ADMIN role access
                 .antMatchers("/api/admin/token/**").hasRole("ADMIN")
-                // 允许访问OAuth相关端点
+                // Allow access to OAuth-related endpoints
                 .antMatchers("/oauth/**").permitAll()
-                // 其他请求需要认证
+                // Other requests require authentication
                 .anyRequest().authenticated()
             .and()
                 .httpBasic();

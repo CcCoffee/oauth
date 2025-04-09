@@ -50,7 +50,7 @@ public class ClientsApiController {
                         .map(org.springframework.security.oauth2.core.AuthorizationGrantType::new)
                         .collect(Collectors.toList())));
 
-        // 添加scope
+        // add scope
         request.getScope().forEach(builder::scope);
 
         RegisteredClient registeredClient = builder
@@ -101,7 +101,7 @@ public class ClientsApiController {
                         .collect(Collectors.toList()));
                 });
 
-        // 更新scope
+        // update scope
         builder.scopes(scopes -> {
             scopes.clear();
             request.getScope().forEach(scopes::add);

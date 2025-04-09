@@ -12,18 +12,18 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
 
     @Override
     public void customize(JwtEncodingContext context) {
-        // 方法一
+        // method one
         List<String> modifiedAudiences = new ArrayList<>();
-        modifiedAudiences.add(context.getRegisteredClient().getClientSettings().getSetting("resource.id")); // aud list 包含 resource id 即可
+        modifiedAudiences.add(context.getRegisteredClient().getClientSettings().getSetting("resource.id")); // aud list includes resource id
         context.getClaims().audience(modifiedAudiences);
 
-        // 方法二，获取原有的audience信息
-//        List<String> audiences = new ArrayList<>(context.getClaims().build().getAudience());
-//        if (!audiences.isEmpty()) {
-//            // 替换原有的audience
-//            List<String> modifiedAudiences = new ArrayList<>(audiences);
-//            modifiedAudiences.add(context.getRegisteredClient().getClientSettings().getSetting("resource.id")); // aud list 包含 resource id 即可
-//            context.getClaims().audience(modifiedAudiences);
-//        }
+        // Method two, get the original audience information
+        // List<String> audiences = new ArrayList<>(context.getClaims().build().getAudience());
+        // if (!audiences.isEmpty()) {
+        //     // Replace the original audience
+        //     List<String> modifiedAudiences = new ArrayList<>(audiences);
+        //     modifiedAudiences.add(context.getRegisteredClient().getClientSettings().getSetting("resource.id")); // aud list includes resource id
+        //     context.getClaims().audience(modifiedAudiences);
+        // }
     }
 } 

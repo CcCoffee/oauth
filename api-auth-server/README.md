@@ -1,121 +1,121 @@
-# OAuth2授权服务器
+# OAuth2 Authorization Server
 
-这是一个基于Spring Authorization Server的OAuth2授权服务器演示项目，专注于提供客户端凭证授权流程支持。
+This is a demonstration project for an OAuth2 authorization server based on Spring Authorization Server, focusing on providing client credential authorization flow support.
 
-## 项目架构
+## Project Architecture
 
-本项目是OAuth2授权架构中的授权服务器组件，与资源服务器配合使用：
+This project is the authorization server component in the OAuth2 authorization architecture, used in conjunction with the resource server:
 
-- **授权服务器(api-auth-server)**：本项目，负责颁发和验证OAuth2令牌
-- **API提供者(api-provider-demo)**：资源服务器，提供受OAuth2保护的API资源
-- **API消费者(api-consumer-demo)**：客户端应用，使用客户端凭证访问API
+- **Authorization Server(api-auth-server)**: This project, responsible for issuing and validating OAuth2 tokens
+- **API Provider(api-provider-demo)**: Resource server, providing API resources protected by OAuth2
+- **API Consumer(api-consumer-demo)**: Client application, accessing API using client credentials
 
-### 技术栈
+### Technology Stack
 
 - Java 21
 - Spring Boot 3.4.4
 - Spring Security
 - Spring Authorization Server
 
-## 快速开始
+## Quick Start
 
-### 先决条件
+### Prerequisites
 
 - JDK 21+
 - Maven 3.6+
-- PostgreSQL 数据库
+- PostgreSQL database
 
-### 生成密钥库
+### Generating the Keystore
 
-在运行项目之前，需要生成JWT签名使用的密钥库：
+Before running the project, you need to generate the keystore used for JWT signing:
 
 ```bash
-# 生成RSA密钥对并存储到JKS密钥库
+# Generate RSA key pair and store it in a JKS keystore
 keytool -genkeypair -alias myalias -keyalg RSA -keysize 2048 -storetype JKS -keystore mykeystore.jks -storepass mykeystorepass -keypass mykeypass -dname "CN=localhost, OU=Development, O=Example, L=City, S=State, C=CN"
 
-# 将生成的密钥库文件移动到项目资源目录
+# Move the generated keystore file to the project resources directory
 mv mykeystore.jks api-auth-server/src/main/resources/
 ```
 
-### 构建项目
+### Building the Project
 
 ```bash
 mvn clean package
 ```
 
-### 运行项目
+### Running the Project
 
 ```bash
 mvn spring-boot:run
 ```
 
-或者使用JAR文件启动：
+Or start using the JAR file:
 
 ```bash
 java -jar target/api-auth-server-0.0.1-SNAPSHOT.jar
 ```
 
-服务将在端口9000上启动。
+The service will start on port 9000.
 
-## 授权服务器端点
+## Authorization Server Endpoints
 
-项目提供以下OAuth2标准端点：
+The project provides the following standard OAuth2 endpoints:
 
-- **授权端点**: `/oauth2/authorize`
-- **令牌端点**: `/oauth2/token`
-- **令牌撤销端点**: `/oauth2/revoke`
-- **令牌内省端点**: `/oauth2/introspect`
-- **JWK集端点**: `/oauth2/jwks`
-- **OpenID Connect发现端点**: `/.well-known/openid-configuration`
+- **Authorization Endpoint**: `/oauth2/authorize`
+- **Token Endpoint**: `/oauth2/token`
+- **Token Revocation Endpoint**: `/oauth2/revoke`
+- **Token Introspection Endpoint**: `/oauth2/introspect`
+- **JWK Set Endpoint**: `/oauth2/jwks`
+- **OpenID Connect Discovery Endpoint**: `/.well-known/openid-configuration`
 
-## 客户端凭证授权流程
+## Client Credentials Authorization Flow
 
-授权服务器支持客户端凭证授权流程，主要用于服务器到服务器的API访问：
+The authorization server supports the client credentials authorization flow, mainly used for server-to-server API access:
 
-1. 客户端以自身名义（而非用户）请求访问令牌
-2. 授权服务器验证客户端凭证（ID和密钥）
-3. 验证通过后，授权服务器颁发访问令牌
-4. 客户端使用访问令牌访问受保护的API资源
+1. The client requests an access token on its own behalf (not on behalf of a user)
+2. The authorization server verifies the client credentials (ID and secret)
+3. After verification, the authorization server issues an access token
+4. The client uses the access token to access protected API resources
 
-## 预配置客户端
+## Preconfigured Clients
 
-授权服务器预配置了以下OAuth2客户端：
+The authorization server has preconfigured the following OAuth2 clients:
 
-### 不透明令牌客户端
+### Opaque Token Client
 ```
-客户端ID: opaque-client
-客户端密钥: opaque-secret
-授权类型: client_credentials
-作用域: message.read
-令牌格式: 不透明令牌
-有效期: 30分钟
-```
-
-### JWT令牌客户端
-```
-客户端ID: jwt-client
-客户端密钥: jwt-secret
-授权类型: client_credentials
-作用域: message.read
-令牌格式: JWT
-有效期: 1小时
+Client ID: opaque-client
+Client Secret: opaque-secret
+Authorization Type: client_credentials
+Scope: message.read
+Token Format: Opaque Token
+Validity Period: 30 minutes
 ```
 
-### 资源服务器客户端
+### JWT Token Client
 ```
-客户端ID: resource-server
-客户端密钥: secret
-用途: 令牌内省
-作用域: introspection
+Client ID: jwt-client
+Client Secret: jwt-secret
+Authorization Type: client_credentials
+Scope: message.read
+Token Format: JWT
+Validity Period: 1 hour
 ```
 
-## 集群部署指南
+### Resource Server Client
+```
+Client ID: resource-server
+Client Secret: secret
+Purpose: Token Introspection
+Scope: introspection
+```
 
-本项目支持在多实例集群环境中部署，关键配置包括：
+## Cluster Deployment Guide
 
-### 1. 数据库配置
+This project supports deployment in a multi-instance cluster environment, with key configurations including:
 
-所有实例必须连接到相同的PostgreSQL数据库。在`application.yml`中配置数据库连接：
+### 1. Database Configuration
+
+All instances must connect to the same PostgreSQL database. Configure the database connection in `application.yml`:
 
 ```yaml
 spring:
@@ -126,21 +126,21 @@ spring:
     driver-class-name: org.postgresql.Driver
 ```
 
-### 2. 数据库表结构
+### 2. Database Table Structure
 
-在首次启动前，确保PostgreSQL数据库中已创建所需表结构。项目会自动初始化表结构，具体SQL脚本位于：
+Before the first start, ensure the PostgreSQL database has the required table structure. The project will automatically initialize the table structure, with the specific SQL script located at:
 `src/main/resources/schema/oauth2-schema.sql`
 
-### 3. 密钥管理
+### 3. Key Management
 
-集群所有节点共享相同的JWT签名密钥。系统自动通过数据库表 `oauth2_jwt_keys` 管理密钥：
-- 首次启动时，系统会生成新密钥并存储到数据库
-- 后续所有实例都会从数据库获取相同的密钥
-- 密钥自动在集群间同步，无需手动配置
+All cluster nodes share the same JWT signing key. The system automatically manages keys through the database table `oauth2_jwt_keys`:
+- The system generates a new key and stores it in the database on the first start
+- All subsequent instances will retrieve the same key from the database
+- Keys are automatically synchronized across the cluster, no manual configuration required
 
-### 4. 负载均衡配置
+### 4. Load Balancer Configuration
 
-在使用负载均衡器时，需要修改授权服务器颁发者URL：
+When using a load balancer, you need to modify the authorization server issuer URL:
 
 ```yaml
 spring:
@@ -150,17 +150,17 @@ spring:
         issuer: https://your-load-balancer-domain
 ```
 
-所有资源服务器也需要使用相同的颁发者URL。
+All resource servers also need to use the same issuer URL.
 
-### 5. 会话共享
+### 5. Session Sharing
 
-本项目为无状态服务，所有状态都存储在数据库中，无需额外配置会话共享。
+This project is a stateless service, with all state stored in the database, no additional configuration for session sharing is required.
 
-## 测试令牌获取
+## Testing Token Acquisition
 
-您可以使用以下命令测试客户端凭证授权流程：
+You can use the following commands to test the client credentials authorization flow:
 
-### 获取不透明令牌
+### Obtaining an Opaque Token
 ```bash
 curl -X POST \
   http://localhost:9000/oauth2/token \
@@ -169,7 +169,7 @@ curl -X POST \
   -d "grant_type=client_credentials&scope=message.read"
 ```
 
-### 获取JWT令牌
+### Obtaining a JWT Token
 ```bash
 curl -X POST \
   http://localhost:9000/oauth2/token \
@@ -178,18 +178,18 @@ curl -X POST \
   -d "grant_type=client_credentials&scope=message.read"
 ```
 
-## JWT令牌格式
+## JWT Token Format
 
-授权服务器颁发的JWT令牌包含以下标准声明：
+The JWT tokens issued by the authorization server contain the following standard claims:
 
-- `iss`：颁发者，值为授权服务器URL
-- `sub`：主题，值为客户端ID
-- `aud`：受众，值为资源服务器标识符
-- `exp`：过期时间
-- `iat`：颁发时间
-- `scope`：权限范围
+- `iss`：Issuer, value is the authorization server URL
+- `sub`：Subject, value is the client ID
+- `aud`：Audience, value is the resource server identifier
+- `exp`：Expiration Time
+- `iat`：Issued At
+- `scope`：Scope
 
-## 项目结构
+## Project Structure
 
 ```
 api-auth-server/
@@ -199,26 +199,26 @@ api-auth-server/
 │   │   │   └── com/
 │   │   │       └── example/
 │   │   │           └── api_auth_server/
-│   │   │               ├── ApiAuthServerApplication.java    # 应用程序入口
+│   │   │               ├── ApiAuthServerApplication.java    # Application entry point
 │   │   │               └── config/
-│   │   │                   └── AuthServerConfig.java        # 授权服务器配置
+│   │   │                   └── AuthServerConfig.java        # Authorization server configuration
 │   │   └── resources/
-│   │       └── application.properties                       # 应用配置
+│   │       └── application.properties                       # Application configuration
 │   └── test/
 │       └── java/
 │           └── com/
 │               └── example/
-│                   └── ApiAuthServerApplicationTests.java   # 测试类
-└── pom.xml                                                  # Maven配置
+│                   └── ApiAuthServerApplicationTests.java   # Test class
+└── pom.xml                                                  # Maven configuration
 ```
 
-## 安全注意事项
+## Security Considerations
 
-- 在生产环境中，应确保使用HTTPS保护所有通信
-- 客户端密钥应妥善保管，避免泄露
-- 适当设置令牌有效期，定期轮换密钥
-- 根据最小权限原则配置客户端权限范围
+- Ensure all communication is protected by HTTPS in production environments
+- Client secrets should be kept confidential to prevent leakage
+- Set token validity periods appropriately and rotate keys periodically
+- Configure client permissions according to the principle of least privilege
 
-## 许可证
+## License
 
-本项目采用MIT许可证 
+This project is licensed under the MIT License

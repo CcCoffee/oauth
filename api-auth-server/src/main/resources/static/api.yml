@@ -1,30 +1,30 @@
 openapi: 3.0.3
 info:
-  title: OAuth2授权服务API
-  description: 提供OAuth2授权服务的API接口，包含标准OAuth2接口和迁移工具接口
+  title: OAuth2 Authorization Service API
+  description: Provides API interfaces for OAuth2 authorization services, including standard OAuth2 interfaces and migration tool interfaces
   version: 1.0.0
 
 servers:
   - url: 'http://localhost:9000'
-    description: 本地开发服务器
+    description: Local Development Server
 
 tags:
   - name: oauth2
-    description: 标准OAuth2接口
+    description: Standard OAuth2 Interface
   - name: legacy
-    description: 兼容旧版OAuth2接口
+    description: Compatible with the old version of OAuth2 Interface
   - name: migration
-    description: 数据迁移工具接口
+    description: Data Migration Tool Interface
   - name: admin
-    description: 管理员接口
+    description: Administrator Interface
 
 paths:
   /oauth2/token:
     post:
       tags:
         - oauth2
-      summary: 获取OAuth2访问令牌
-      description: 标准OAuth2令牌端点，用于获取访问令牌
+      summary: Get OAuth2 Access Token
+      description: Standard OAuth2 Token Endpoint for obtaining access tokens
       operationId: getToken
       requestBody:
         required: true
@@ -36,23 +36,23 @@ paths:
                 grant_type:
                   type: string
                   enum: [client_credentials]
-                  description: 授权类型
+                  description: Authorization Type
                 client_id:
                   type: string
-                  description: 客户端ID
+                  description: Client ID
                 client_secret:
                   type: string
-                  description: 客户端密钥
+                  description: Client Secret
                 scope:
                   type: string
-                  description: 请求的权限范围
+                  description: Requested Scope of Permissions
               required:
                 - grant_type
                 - client_id
                 - client_secret
       responses:
         '200':
-          description: 获取令牌成功
+          description: Token Obtained Successfully
           content:
             application/json:
               schema:
@@ -69,16 +69,16 @@ paths:
                   scope:
                     type: string
         '400':
-          description: 请求参数错误
+          description: Bad Request
         '401':
-          description: 认证失败
+          description: Authentication Failed
 
   /oauth2/introspect:
     post:
       tags:
         - oauth2
-      summary: 令牌内省端点
-      description: 用于验证令牌有效性和获取令牌信息
+      summary: Token Introspection Endpoint
+      description: Used to verify the validity of the token and obtain token information
       operationId: introspectToken
       security:
         - basicAuth: []
@@ -91,16 +91,16 @@ paths:
               properties:
                 token:
                   type: string
-                  description: 要检查的令牌
+                  description: Token to be checked
                 token_type_hint:
                   type: string
                   enum: [access_token, refresh_token]
-                  description: 令牌类型提示
+                  description: Token Type Hint
               required:
                 - token
       responses:
         '200':
-          description: 令牌内省结果
+          description: Token Introspection Result
           content:
             application/json:
               schema:
@@ -123,12 +123,12 @@ paths:
     get:
       tags:
         - oauth2
-      summary: JWK密钥集端点
-      description: 提供用于验证JWT令牌的公钥
+      summary: JWK Key Set Endpoint
+      description: Provides public keys for verifying JWT tokens
       operationId: getJwks
       responses:
         '200':
-          description: 成功获取JWK集
+          description: Successfully Obtained JWK Set
           content:
             application/json:
               schema:
@@ -156,8 +156,8 @@ paths:
     post:
       tags:
         - legacy
-      summary: 旧版令牌端点
-      description: 兼容旧版OAuth2的令牌获取端点
+      summary: Old Version Token Endpoint
+      description: Token acquisition endpoint compatible with the old version of OAuth2
       operationId: getLegacyToken
       requestBody:
         required: true
@@ -167,26 +167,26 @@ paths:
               $ref: '#/components/schemas/TokenRequest'
       responses:
         '200':
-          description: 获取令牌成功
+          description: Token Obtained Successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenResponse'
         '400':
-          description: 请求参数错误
+          description: Bad Request
         '401':
-          description: 认证失败
+          description: Authentication Failed
 
   /oauth/token_key:
     get:
       tags:
         - legacy
-      summary: 旧版公钥端点
-      description: 兼容旧版OAuth2的公钥获取端点
+      summary: Old Version Public Key Endpoint
+      description: Public key acquisition endpoint compatible with the old version of OAuth2
       operationId: getLegacyTokenKey
       responses:
         '200':
-          description: 成功获取公钥
+          description: Successfully Obtained Public Key
           content:
             application/json:
               schema:
@@ -196,21 +196,21 @@ paths:
                     type: string
                   value:
                     type: string
-                    description: PEM格式的公钥
+                    description: PEM format public key
 
   /api/admin/migration/clients:
     post:
       tags:
         - migration
         - admin
-      summary: 迁移客户端数据
-      description: 触发OAuth2客户端数据的迁移操作
+      summary: Migrate Client Data
+      description: Trigger the migration operation of OAuth2 client data
       operationId: migrateClients
       security:
         - basicAuth: []
       responses:
         '200':
-          description: 迁移成功
+          description: Migration Successful
           content:
             application/json:
               schema:
@@ -222,7 +222,7 @@ paths:
                   message:
                     type: string
         '500':
-          description: 迁移失败
+          description: Migration Failed
           content:
             application/json:
               schema:
@@ -239,20 +239,20 @@ paths:
       tags:
         - migration
         - admin
-      summary: 迁移令牌数据
-      description: 触发OAuth2访问令牌的迁移操作
+      summary: Migrate Token Data
+      description: Trigger the migration operation of OAuth2 access tokens
       operationId: migrateTokens
       security:
         - basicAuth: []
       responses:
         '200':
-          description: 迁移成功
+          description: Migration Successful
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MigrationResponse'
         '500':
-          description: 迁移失败
+          description: Migration Failed
           content:
             application/json:
               schema:
@@ -263,20 +263,20 @@ paths:
       tags:
         - migration
         - admin
-      summary: 迁移所有数据
-      description: 触发所有OAuth2相关数据的迁移操作
+      summary: Migrate All Data
+      description: Trigger the migration operation of all OAuth2 related data
       operationId: migrateAll
       security:
         - basicAuth: []
       responses:
         '200':
-          description: 迁移成功
+          description: Migration Successful
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MigrationResponse'
         '500':
-          description: 迁移失败
+          description: Migration Failed
           content:
             application/json:
               schema:
@@ -286,8 +286,8 @@ paths:
     post:
       tags:
         - admin
-      summary: 创建新的OAuth2客户端
-      description: 创建一个新的OAuth2客户端
+      summary: Create a New OAuth2 Client
+      description: Create a new OAuth2 client
       operationId: createClient
       security:
         - basicAuth: []
@@ -300,49 +300,49 @@ paths:
               properties:
                 client_id:
                   type: string
-                  description: 客户端ID
+                  description: Client ID
                 client_secret:
                   type: string
-                  description: 客户端密钥
+                  description: Client Secret
                 resource_ids:
                   type: array
                   items:
                     type: string
-                  description: 资源ID列表
+                  description: Resource ID List
                 scope:
                   type: array
                   items:
                     type: string
-                  description: 权限范围列表
+                  description: Scope of Permissions List
                 grant_types:
                   type: array
                   items:
                     type: string
-                  description: 授权类型列表
+                  description: Authorization Type List
                 expires_in:
                   type: integer
-                  description: 令牌过期时间（秒）
+                  description: Token Expiration Time (seconds)
                 additional_information:
                   type: object
-                  description: 额外的客户端信息
+                  description: Additional Client Information
               required:
                 - client_id
                 - client_secret
       responses:
         '201':
-          description: 客户端创建成功
+          description: Client Created Successfully
         '400':
-          description: 请求参数错误
+          description: Bad Request
         '401':
-          description: 认证失败
+          description: Authentication Failed
         '409':
-          description: 客户端ID已存在
+          description: Client ID Already Exists
 
     get:
       tags:
         - admin
-      summary: 查询客户端列表
-      description: 根据resourceId查询客户端列表
+      summary: Query Client List
+      description: Query the client list based on the resourceId
       operationId: getClients
       security:
         - basicAuth: []
@@ -351,10 +351,10 @@ paths:
           in: query
           schema:
             type: string
-          description: 资源ID
+          description: Resource ID
       responses:
         '200':
-          description: 成功获取客户端列表
+          description: Successfully Obtained Client List
           content:
             application/json:
               schema:
@@ -362,14 +362,14 @@ paths:
                 items:
                   $ref: '#/components/schemas/Client'
         '401':
-          description: 认证失败
+          description: Authentication Failed
 
   /clients/{client_id}:
     get:
       tags:
         - admin
-      summary: 获取指定客户端信息
-      description: 根据client_id查询客户端详细信息
+      summary: Get Specific Client Information
+      description: Query detailed information of the client based on the client_id
       operationId: getClient
       security:
         - basicAuth: []
@@ -379,24 +379,24 @@ paths:
           required: true
           schema:
             type: string
-          description: 客户端ID
+          description: Client ID
       responses:
         '200':
-          description: 成功获取客户端信息
+          description: Successfully Obtained Client Information
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Client'
         '401':
-          description: 认证失败
+          description: Authentication Failed
         '404':
-          description: 客户端不存在
+          description: Client Not Found
 
     put:
       tags:
         - admin
-      summary: 更新客户端信息
-      description: 更新指定客户端的配置信息
+      summary: Update Client Information
+      description: Update the configuration information of the specified client
       operationId: updateClient
       security:
         - basicAuth: []
@@ -406,7 +406,7 @@ paths:
           required: true
           schema:
             type: string
-          description: 客户端ID
+          description: Client ID
       requestBody:
         required: true
         content:
@@ -432,17 +432,17 @@ paths:
                     type: string
       responses:
         '200':
-          description: 客户端更新成功
+          description: Client Updated Successfully
         '401':
-          description: 认证失败
+          description: Authentication Failed
         '404':
-          description: 客户端不存在
+          description: Client Not Found
 
     delete:
       tags:
         - admin
-      summary: 删除客户端
-      description: 删除指定的客户端
+      summary: Delete Client
+      description: Delete the specified client
       operationId: deleteClient
       security:
         - basicAuth: []
@@ -452,21 +452,21 @@ paths:
           required: true
           schema:
             type: string
-          description: 客户端ID
+          description: Client ID
       responses:
         '204':
-          description: 客户端删除成功
+          description: Client Deleted Successfully
         '401':
-          description: 认证失败
+          description: Authentication Failed
         '404':
-          description: 客户端不存在
+          description: Client Not Found
 
   /clients/{client_id}/secret:
     put:
       tags:
         - admin
-      summary: 更新客户端密钥
-      description: 更新指定客户端的密钥
+      summary: Update Client Secret
+      description: Update the secret of the specified client
       operationId: updateClientSecret
       security:
         - basicAuth: []
@@ -476,7 +476,7 @@ paths:
           required: true
           schema:
             type: string
-          description: 客户端ID
+          description: Client ID
       requestBody:
         required: true
         content:
@@ -486,23 +486,23 @@ paths:
               properties:
                 client_secret:
                   type: string
-                  description: 新的客户端密钥
+                  description: New Client Secret
               required:
                 - client_secret
       responses:
         '200':
-          description: 客户端密钥更新成功
+          description: Client Secret Updated Successfully
         '401':
-          description: 认证失败
+          description: Authentication Failed
         '404':
-          description: 客户端不存在
+          description: Client Not Found
 
   /clients/{client_id}/tokens:
     get:
       tags:
         - admin
-      summary: 获取客户端令牌列表
-      description: 获取指定客户端的访问令牌列表
+      summary: Get Client Token List
+      description: Get the access token list of the specified client
       operationId: getClientTokens
       security:
         - basicAuth: []
@@ -512,17 +512,17 @@ paths:
           required: true
           schema:
             type: string
-          description: 客户端ID
+          description: Client ID
         - name: scope
           in: query
           schema:
             type: array
             items:
               type: string
-          description: 按权限范围过滤
+          description: Filter by Scope of Permissions
       responses:
         '200':
-          description: 成功获取令牌列表
+          description: Successfully Obtained Token List
           content:
             application/json:
               schema:
@@ -530,15 +530,15 @@ paths:
                 items:
                   $ref: '#/components/schemas/Token'
         '401':
-          description: 认证失败
+          description: Authentication Failed
         '404':
-          description: 客户端不存在
+          description: Client Not Found
 
     delete:
       tags:
         - admin
-      summary: 删除客户端令牌
-      description: 删除指定客户端的访问令牌
+      summary: Delete Client Token
+      description: Delete the access token of the specified client
       operationId: deleteClientTokens
       security:
         - basicAuth: []
@@ -548,21 +548,21 @@ paths:
           required: true
           schema:
             type: string
-          description: 客户端ID
+          description: Client ID
         - name: scope
           in: query
           schema:
             type: array
             items:
               type: string
-          description: 按权限范围过滤
+          description: Filter by Scope of Permissions
       responses:
         '204':
-          description: 令牌删除成功
+          description: Token Deleted Successfully
         '401':
-          description: 认证失败
+          description: Authentication Failed
         '404':
-          description: 客户端不存在
+          description: Client Not Found
 
 components:
   securitySchemes:
@@ -672,4 +672,4 @@ components:
           format: date-time
       required:
         - token_id
-        - client_id 
+        - client_id

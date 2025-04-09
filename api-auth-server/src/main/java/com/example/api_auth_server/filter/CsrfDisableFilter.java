@@ -21,12 +21,12 @@ public class CsrfDisableFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        // 为每个请求生成一个CSRF令牌，但不进行验证，实际上禁用了CSRF保护
+        // Generates a CSRF token for each request but does not validate it, effectively disabling CSRF protection
         CsrfTokenRepository repository = new HttpSessionCsrfTokenRepository();
         CsrfToken token = repository.generateToken(request);
         repository.saveToken(token, request, response);
         
-        // 继续过滤器链
+        // Continues the filter chain
         filterChain.doFilter(request, response);
     }
 } 

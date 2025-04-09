@@ -9,39 +9,39 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * Web配置类，添加CORS支持
+ * Web configuration class, adds CORS support
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        // 为所有API路径添加CORS支持
+        // Adds CORS support for all API paths
         registry.addMapping("/**")
-                .allowedOrigins("https://editor.swagger.io") // 允许Swagger Editor访问
+                .allowedOrigins("https://editor.swagger.io") // Allows Swagger Editor access
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)
-                .maxAge(3600); // 1小时内不需要再预检（发送OPTIONS请求）
+                .maxAge(3600); // No need to re-preflight (send OPTIONS request) within 1 hour
     }
 
     /**
-     * 创建CORS过滤器，用于处理预检请求和实际请求
+     * Creates a CORS filter for handling preflight and actual requests
      */
     @Bean
     public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         
-        // 允许Swagger Editor
+        // Allows Swagger Editor
         config.addAllowedOrigin("https://editor.swagger.io");
-        // 允许所有头信息
+        // Allows all header information
         config.addAllowedHeader("*");
-        // 允许所有方法
+        // Allows all methods
         config.addAllowedMethod("*");
-        // 允许发送Cookie
+        // Allows sending Cookie
         config.setAllowCredentials(true);
-        // 缓存预检请求结果1小时
+        // Caches preflight request results for 1 hour
         config.setMaxAge(3600L);
         
         source.registerCorsConfiguration("/**", config);

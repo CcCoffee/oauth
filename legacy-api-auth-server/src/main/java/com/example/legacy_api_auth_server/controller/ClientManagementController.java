@@ -17,7 +17,7 @@ public class ClientManagementController {
     private ClientRegistrationService clientRegistrationService;
 
     /**
-     * 添加新的OAuth2客户端
+     * Add a new OAuth2 client
      */
     @PostMapping
     public ResponseEntity<Map<String, Object>> addClient(
@@ -51,7 +51,7 @@ public class ClientManagementController {
             );
 
             response.put("status", "success");
-            response.put("message", "客户端添加成功");
+            response.put("message", "Client added successfully");
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             response.put("status", "error");
@@ -59,13 +59,13 @@ public class ClientManagementController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         } catch (Exception e) {
             response.put("status", "error");
-            response.put("message", "添加客户端失败: " + e.getMessage());
+            response.put("message", "Failed to add client: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
     /**
-     * 检查客户端是否存在
+     * Check if the client exists
      */
     @GetMapping("/{clientId}/exists")
     public ResponseEntity<Map<String, Object>> checkClientExists(@PathVariable String clientId) {
@@ -79,7 +79,7 @@ public class ClientManagementController {
     }
 
     /**
-     * 删除客户端
+     * Delete the client
      */
     @DeleteMapping("/{clientId}")
     public ResponseEntity<Map<String, Object>> removeClient(@PathVariable String clientId) {
@@ -89,11 +89,11 @@ public class ClientManagementController {
         
         if (removed) {
             response.put("status", "success");
-            response.put("message", "客户端删除成功");
+            response.put("message", "Client deleted successfully");
             return ResponseEntity.ok(response);
         } else {
             response.put("status", "error");
-            response.put("message", "找不到指定的客户端");
+            response.put("message", "Specified client not found");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
     }

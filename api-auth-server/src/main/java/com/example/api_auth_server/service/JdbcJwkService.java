@@ -35,10 +35,10 @@ public class JdbcJwkService {
             RSAKey rsaKey = buildRsaKey(jwkData);
             return new ImmutableJWKSet<>(new JWKSet(rsaKey));
         } catch (EmptyResultDataAccessException e) {
-            // 没有找到活跃的JWK，创建新的
+            // No active JWK found, create a new one
             return createAndSaveNewJwk();
         } catch (Exception e) {
-            throw new RuntimeException("获取JWK失败", e);
+            throw new RuntimeException("Failed to get JWK", e);
         }
     }
     
@@ -49,7 +49,7 @@ public class JdbcJwkService {
     
     private JWKSource<SecurityContext> createAndSaveNewJwk() {
         try {
-            // 生成新的RSA密钥对
+            // Generate a new RSA key pair
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
             keyPairGenerator.initialize(2048);
             KeyPair keyPair = keyPairGenerator.generateKeyPair();
@@ -60,15 +60,15 @@ public class JdbcJwkService {
             String keyId = UUID.randomUUID().toString();
             String id = UUID.randomUUID().toString();
             
-            // 将密钥编码为Base64
+            // Encode keys to Base64
             String publicKeyEncoded = Base64.getEncoder().encodeToString(publicKey.getEncoded());
             String privateKeyEncoded = Base64.getEncoder().encodeToString(privateKey.getEncoded());
             
-            // 保存到数据库
+            // Save to database
             String sql = "INSERT INTO oauth2_jwt_keys (id, key_id, public_key, private_key, is_active) VALUES (?, ?, ?, ?, true)";
             jdbcTemplate.update(sql, id, keyId, publicKeyEncoded, privateKeyEncoded);
             
-            // 创建并返回JWKSource
+            // Create and return JWKSource
             RSAKey rsaKey = new RSAKey.Builder(publicKey)
                     .privateKey(privateKey)
                     .keyID(keyId)
@@ -76,7 +76,7 @@ public class JdbcJwkService {
             
             return new ImmutableJWKSet<>(new JWKSet(rsaKey));
         } catch (Exception e) {
-            throw new RuntimeException("创建JWK失败", e);
+            throw new RuntimeException("Failed to create JWK", e);
         }
     }
     
@@ -84,24 +84,24 @@ public class JdbcJwkService {
         try {
             java.security.KeyFactory keyFactory = java.security.KeyFactory.getInstance("RSA");
             
-            // 解码Base64密钥
+            // Decode Base64 keys
             byte[] publicKeyBytes = Base64.getDecoder().decode(jwkData.getPublicKey());
             byte[] privateKeyBytes = Base64.getDecoder().decode(jwkData.getPrivateKey());
             
-            // 重建RSA公钥和私钥
+            // Rebuild RSA public and private keys
             java.security.spec.X509EncodedKeySpec publicKeySpec = new java.security.spec.X509EncodedKeySpec(publicKeyBytes);
             RSAPublicKey publicKey = (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
             
             java.security.spec.PKCS8EncodedKeySpec privateKeySpec = new java.security.spec.PKCS8EncodedKeySpec(privateKeyBytes);
             RSAPrivateKey privateKey = (RSAPrivateKey) keyFactory.generatePrivate(privateKeySpec);
             
-            // 构建RSAKey
+            // Build RSAKey
             return new RSAKey.Builder(publicKey)
                     .privateKey(privateKey)
                     .keyID(jwkData.getKeyId())
                     .build();
         } catch (Exception e) {
-            throw new RuntimeException("构建RSAKey失败", e);
+            throw new RuntimeException("Failed to build RSAKey", e);
         }
     }
     

@@ -32,34 +32,34 @@ public class KeyStoreJwkService {
     
     public JWKSource<SecurityContext> getJwkSource() {
         try {
-            // 从类路径加载密钥库文件
+            // Load keystore file from classpath
             ClassPathResource resource = new ClassPathResource(keystorePath);
             InputStream is = resource.getInputStream();
             
-            // 明确指定密钥库类型为JKS
+            // Explicitly specify keystore type as JKS
             KeyStore keyStore = KeyStore.getInstance("JKS");
             keyStore.load(is, keystorePassword.toCharArray());
             
-            // 从密钥库获取RSA密钥对
+            // Get RSA key pair from keystore
             RSAPrivateKey privateKey = (RSAPrivateKey) keyStore.getKey(
                     keyAlias, keyPassword.toCharArray());
             RSAPublicKey publicKey = (RSAPublicKey) keyStore.getCertificate(keyAlias)
                     .getPublicKey();
             
-            // 构建RSA密钥
+            // Build RSA key
             RSAKey rsaKey = new RSAKey.Builder(publicKey)
                     .privateKey(privateKey)
                     .keyID(keyAlias)
                     .build();
             
-            // 创建JWK集
+            // Create JWK set
             JWKSet jwkSet = new JWKSet(rsaKey);
             
             return new ImmutableJWKSet<>(jwkSet);
         } catch (Exception e) {
-            // 打印更详细的错误信息
+            // Print more detailed error information
             e.printStackTrace();
-            throw new RuntimeException("无法从密钥库加载JWK: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to load JWK from keystore: " + e.getMessage(), e);
         }
     }
 } 
