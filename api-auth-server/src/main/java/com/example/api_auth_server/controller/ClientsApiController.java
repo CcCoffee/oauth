@@ -8,6 +8,7 @@ import com.example.api_auth_server.repository.CustomJdbcRegisteredClientReposito
 import com.example.api_auth_server.service.TokenService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
@@ -24,12 +25,14 @@ public class ClientsApiController {
 
     private final CustomJdbcRegisteredClientRepository registeredClientRepository;
     private final TokenService tokenService;
+    private final PasswordEncoder passwordEncoder;
 
     public ClientsApiController(
             CustomJdbcRegisteredClientRepository registeredClientRepository,
-            TokenService tokenService) {
+            TokenService tokenService, PasswordEncoder passwordEncoder) {
         this.registeredClientRepository = registeredClientRepository;
         this.tokenService = tokenService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping
@@ -130,7 +133,7 @@ public class ClientsApiController {
         }
 
         RegisteredClient updatedClient = RegisteredClient.from(existingClient)
-                .clientSecret(request.getClientSecret())
+                .clientSecret(passwordEncoder.encode(request.getClientSecret()))
                 .build();
 
         registeredClientRepository.save(updatedClient);
