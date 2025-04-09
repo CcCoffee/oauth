@@ -6,7 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * 单元测试
+ * Unit test
  */
 @SpringBootTest(classes = ApiProviderDemoApplication.class)
 public class AppTest {

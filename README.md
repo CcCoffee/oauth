@@ -1,16 +1,16 @@
-# OAuth2授权服务架构示例
+# OAuth2 Authorization Service Architecture Example
 
-这是一个基于Spring Boot和Spring Security的OAuth2示例项目，展示了完整的OAuth2授权服务架构。
+This is an example project based on Spring Boot and Spring Security, showcasing a complete OAuth2 authorization service architecture.
 
-## 项目结构
+## Project Structure
 
-本项目包含以下三个主要组件：
+This project consists of the following three main components:
 
-- **[api-auth-server](api-auth-server/README.md)**: OAuth2授权服务器，负责身份验证和颁发访问令牌
-- **[api-provider-demo](api-provider-demo/README.md)**: OAuth2资源服务器，提供受保护的API资源
-- **[api-consumer-demo](api-consumer-demo/README.md)**: OAuth2客户端，演示如何获取令牌并访问受保护资源
+- **[api-auth-server](api-auth-server/README.md)**: OAuth2 authorization server, responsible for authentication and issuing access tokens
+- **[api-provider-demo](api-provider-demo/README.md)**: OAuth2 resource server, providing protected API resources
+- **[api-consumer-demo](api-consumer-demo/README.md)**: OAuth2 client, demonstrating how to obtain tokens and access protected resources
 
-## 技术栈
+## Technology Stack
 
 - Java 21
 - Spring Boot 3.4.4
@@ -19,108 +19,104 @@
 - Spring OAuth2 Resource Server
 - Spring OAuth2 Client
 
-## 快速开始
+## Quick Start
 
-### 先决条件
+### Prerequisites
 
 - JDK 21+
 - Maven 3.6+
 
-### 启动所有服务
+### Start All Services
 
-1. 首先启动授权服务器：
+1. First, start the authorization server:
 
 ```bash
 cd api-auth-server
 mvn spring-boot:run
 ```
 
-授权服务器将在端口9000上启动。
+The authorization server will start on port 9000.
 
-2. 然后启动资源服务器：
+2. Then, start the resource server:
 
 ```bash
 cd api-provider-demo
 mvn spring-boot:run
 ```
 
-资源服务器将在端口8090上启动。
+The resource server will start on port 8090.
 
-3. 最后启动客户端：
+3. Finally, start the client:
 
 ```bash
 cd api-consumer-demo
 mvn spring-boot:run
 ```
 
-客户端将在端口8080上启动。
+The client will start on port 8080.
 
-## 测试API访问
+## Test API Access
 
-### 使用测试脚本
+### Using Test Scripts
 
-运行提供的测试脚本来验证所有功能：
+Run the provided test scripts to validate all functionalities:
 
 ```bash
 cd api-consumer-demo/src/test/shell
 ./api-test.sh
 ```
 
-这个脚本会测试：
-1. API信息端点
-2. 直接API访问
-3. OAuth2不透明令牌端点
-4. OAuth2 JWT令牌端点
-5. 授权服务器令牌端点
+This script will test:
+1. API information endpoint
+2. Direct API access
+3. OAuth2 opaque token endpoint
+4. OAuth2 JWT token endpoint
+5. Authorization server token endpoint
 
-### 手动测试端点
+### Manual Endpoint Testing
 
-或者手动访问以下端点：
+Alternatively, manually access the following endpoints:
 
 ```
-http://localhost:8080/api/opaque  # 使用不透明令牌访问
-http://localhost:8080/api/jwt     # 使用JWT令牌访问
-http://localhost:8080/api/info    # 查看服务信息
+http://localhost:8080/api/opaque  # Access using opaque token
+http://localhost:8080/api/jwt     # Access using JWT token
+http://localhost:8080/api/info    # View service information
 ```
 
-## 预配置客户端
+## Preconfigured Clients
 
-系统预配置了以下OAuth2客户端：
+The system has preconfigured the following OAuth2 clients:
 
-### 不透明令牌客户端
+### Opaque Token Client
 ```
-客户端ID: opaque-client
-客户端密钥: opaque-secret
-授权类型: client_credentials
-作用域: message.read
-令牌格式: 不透明令牌
-有效期: 30分钟
-```
-
-### JWT令牌客户端
-```
-客户端ID: jwt-client
-客户端密钥: jwt-secret
-授权类型: client_credentials
-作用域: message.read
-令牌格式: JWT
-有效期: 1小时
+Client ID: opaque-client
+Client Secret: opaque-secret
+Authorization Type: client_credentials
+Scope: message.read
+Token Format: Opaque Token
+Validity Period: 30 minutes
 ```
 
-### 资源服务器客户端
+### JWT Token Client
 ```
-客户端ID: resource-server
-客户端密钥: secret
-用途: 令牌内省
-作用域: introspection
+Client ID: jwt-client
+Client Secret: jwt-secret
+Authorization Type: client_credentials
+Scope: message.read
+Token Format: JWT
+Validity Period: 1 hour
 ```
 
-## 服务端口
+### Resource Server Client
+```
+Client ID: resource-server
+Client Secret: secret
+Purpose: Token introspection
+Scope: introspection
+```
 
-- 授权服务器: 9000
-- 资源服务器: 8090
-- 客户端: 8080
+## Service Ports
 
-## 许可证
-
-本项目采用MIT许可证 
+- Authorization Server: 9000
+- Resource Server: 8090
+- Client: 8080

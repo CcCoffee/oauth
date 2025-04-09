@@ -1,36 +1,36 @@
-# 机器-机器通信中处理OAuth2令牌过期问题
+# Handling OAuth2 Token Expiration in Machine-to-Machine Communication
 
-在基于OAuth2的机器-机器(Machine-to-Machine, M2M)通信场景中，访问令牌的过期问题是一个常见挑战。本文档介绍了处理令牌过期的几种常见策略和最佳实践。
+In OAuth2-based machine-to-machine (M2M) communication scenarios, the expiration of access tokens is a common challenge. This document introduces several common strategies and best practices for handling token expiration.
 
-## 客户端凭证令牌的默认过期时间
+## Default Expiration Time for Client Credentials Tokens
 
-在Spring Security OAuth2中，客户端凭证（Client Credentials）流程的访问令牌默认过期时间是**5分钟**（300秒）。
+In Spring Security OAuth2, the default expiration time for client credentials tokens is **5 minutes** (300 seconds).
 
-从项目中的配置可以看到：
+As seen in the project configuration:
 ```
 "settings.token.access-token-time-to-live":"PT300S"
 ```
 
-这里的`PT300S`是ISO 8601持续时间格式：
-- `P`表示这是一个周期（Period）
-- `T`表示接下来是时间单位
-- `300S`表示300秒
+Here, `PT300S` is in ISO 8601 duration format:
+- `P` indicates this is a period
+- `T` indicates the time unit follows
+- `300S` indicates 300 seconds
 
-## 处理令牌过期的策略
+## Strategies for Handling Token Expiration
 
-### 1. 提前刷新策略
+### 1. Proactive Refresh Strategy
 
-在令牌即将过期前主动获取新令牌，避免使用已过期的令牌导致请求失败。
+Proactively obtain a new token before the existing one expires, avoiding request failures due to expired tokens.
 
 ```java
-// 在客户端代码中实现令牌有效期管理
+// Implementing token validity management in client code
 public class TokenManager {
     private String accessToken;
     private long expiresAt;
     private final ApiClient apiClient;
     
     public String getValidToken() {
-        // 如果令牌即将过期（比如还有30秒过期），提前获取新令牌
+        // If the token is about to expire (e.g., 30 seconds left), proactively get a new token
         if (isTokenExpiringSoon()) {
             refreshToken();
         }
@@ -38,23 +38,23 @@ public class TokenManager {
     }
     
     private boolean isTokenExpiringSoon() {
-        // 提前30秒刷新
+        // Refresh 30 seconds ahead
         return System.currentTimeMillis() + 30000 > expiresAt;
     }
     
     private void refreshToken() {
-        // 调用授权服务器获取新令牌
+        // Call the authorization server to get a new token
         TokenResponse response = apiClient.getClientCredentialsToken();
         accessToken = response.getAccessToken();
-        // 将过期时间设置为当前时间 + 令牌有效期
+        // Set the expiration time to the current time + token validity period
         expiresAt = System.currentTimeMillis() + (response.getExpiresIn() * 1000);
     }
 }
 ```
 
-### 2. 错误重试策略
+### 2. Error Retry Strategy
 
-当API调用因令牌过期返回错误时，自动获取新令牌并重试请求。
+When API calls return errors due to token expiration, automatically obtain a new token and retry the request.
 
 ```java
 public class ApiCaller {
@@ -63,17 +63,17 @@ public class ApiCaller {
     
     public ApiResult callApi() {
         try {
-            // 尝试使用当前令牌调用API
+            // Attempt to use the current token to call the API
             return callApiWithRetry();
         } catch (TokenExpiredException e) {
-            // 如果令牌过期，获取新令牌并重试
+            // If the token has expired, get a new token and retry
             tokenService.refreshToken();
             return callApiWithRetry();
         }
     }
     
     private ApiResult callApiWithRetry() {
-        // 设置最大重试次数，防止无限循环
+        // Set a maximum retry count to prevent infinite loops
         int maxRetries = 3;
         for (int i = 0; i < maxRetries; i++) {
             try {
@@ -84,14 +84,14 @@ public class ApiCaller {
                 tokenService.refreshToken();
             }
         }
-        throw new RuntimeException("达到最大重试次数");
+        throw new RuntimeException("Maximum retry count reached");
     }
 }
 ```
 
-### 3. 使用Spring自带的自动令牌管理
+### 3. Using Spring's Built-in Token Management
 
-Spring Security OAuth2客户端库提供了自动令牌管理功能：
+The Spring Security OAuth2 client library provides automatic token management capabilities:
 
 ```java
 @Bean
@@ -113,7 +113,7 @@ public OAuth2AuthorizedClientManager authorizedClientManager(
 }
 ```
 
-结合WebClient使用：
+Used in conjunction with WebClient:
 ```java
 @Bean
 public WebClient webClient(OAuth2AuthorizedClientManager authorizedClientManager) {
@@ -127,11 +127,11 @@ public WebClient webClient(OAuth2AuthorizedClientManager authorizedClientManager
 }
 ```
 
-这种方式下，Spring会自动处理令牌过期问题，获取新令牌并重试请求。
+Under this approach, Spring automatically handles token expiration, obtaining new tokens and retrying requests.
 
-### 4. 增加令牌有效期
+### 4. Increasing Token Validity Period
 
-对于机器-机器通信，可以适当增加令牌有效期，减少令牌刷新频率：
+For machine-to-machine communication, it is possible to appropriately increase the token validity period, reducing the frequency of token refreshes:
 
 ```java
 RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
@@ -141,15 +141,15 @@ RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().to
     .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
     .scope("message.read")
     .tokenSettings(TokenSettings.builder()
-        // 将访问令牌有效期设置为1小时
+        // Set the access token validity period to 1 hour
         .accessTokenTimeToLive(Duration.ofHours(1))
         .build())
     .build();
 ```
 
-### 5. 令牌缓存
+### 5. Token Caching
 
-在分布式系统中，可以使用Redis等缓存服务共享和缓存令牌：
+In distributed systems, it is possible to use Redis or similar caching services to share and cache tokens:
 
 ```java
 @Service
@@ -161,15 +161,15 @@ public class TokenCacheService {
     private static final String TOKEN_EXPIRY_KEY = "api:token_expiry";
     
     public String getToken() {
-        // 检查Redis中是否有可用令牌
+        // Check if there is a usable token in Redis
         String token = redisTemplate.opsForValue().get(TOKEN_KEY);
         String expiryStr = redisTemplate.opsForValue().get(TOKEN_EXPIRY_KEY);
         
         if (token == null || expiryStr == null || isExpired(expiryStr)) {
-            // 获取新令牌
+            // Get a new token
             TokenResponse response = apiClient.getClientCredentialsToken();
             token = response.getAccessToken();
-            // 设置比实际过期时间短一点的缓存时间，避免边界情况
+            // Set a cache time slightly shorter than the actual expiration time to avoid edge cases
             long expiryInSeconds = response.getExpiresIn() - 60;
             redisTemplate.opsForValue().set(TOKEN_KEY, token, expiryInSeconds, TimeUnit.SECONDS);
             redisTemplate.opsForValue().set(TOKEN_EXPIRY_KEY, 
@@ -187,19 +187,19 @@ public class TokenCacheService {
 }
 ```
 
-## 最佳实践
+## Best Practices
 
-1. **平衡安全性和便利性**：短期令牌更安全，但需要更频繁地刷新；长期令牌更方便，但安全风险增加
-2. **实现错误处理**：处理401/403响应，自动尝试刷新令牌重试
-3. **使用指数退避算法**：失败重试时增加等待时间，避免过多请求压垮服务器
-4. **监控令牌使用情况**：记录令牌获取次数、失败率等指标，及时发现异常
-5. **考虑高可用性**：令牌管理组件应能处理授权服务器暂时不可用的情况
-6. **避免令牌泄露**：令牌应通过安全渠道传输，避免存储在日志或不安全的存储中
+1. **Balance Security and Convenience**: Short-term tokens are more secure, but require more frequent refreshes; long-term tokens are more convenient, but increase security risks
+2. **Implement Error Handling**: Handle 401/403 responses, automatically attempting to refresh the token and retry
+3. **Use Exponential Backoff Algorithm**: Increase wait time on failed retries to avoid overwhelming the server
+4. **Monitor Token Usage**: Record token acquisition counts, failure rates, and other metrics to identify anomalies promptly
+5. **Consider High Availability**: Token management components should be able to handle temporary unavailability of the authorization server
+6. **Avoid Token Leakage**: Tokens should be transmitted through secure channels, avoiding storage in logs or insecure storage
 
-## 选择合适的策略
+## Choosing the Right Strategy
 
-- **小型应用**：使用Spring提供的自动令牌管理功能
-- **中型应用**：实现提前刷新策略和错误重试策略
-- **大型分布式应用**：使用令牌缓存和高可用性设计
+- **Small Applications**: Use Spring's built-in automatic token management functionality
+- **Medium-Sized Applications**: Implement proactive refresh and error retry strategies
+- **Large Distributed Applications**: Use token caching and high availability designs
 
-在实际应用中，通常会根据系统规模和性能需求选择合适的策略组合，实现令牌生命周期的高效管理。 
+In practical applications, it is common to select a combination of strategies suitable for the system scale and performance requirements, achieving efficient management of the token lifecycle. 

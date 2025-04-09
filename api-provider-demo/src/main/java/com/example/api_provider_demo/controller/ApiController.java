@@ -17,7 +17,7 @@ public class ApiController {
     @GetMapping("/opaque/message")
     public Map<String, Object> getOpaqueMessage(Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "这是一个使用不透明令牌保护的API端点");
+        response.put("message", "This is an API endpoint protected by an opaque token");
         
         if (authentication instanceof BearerTokenAuthentication) {
             BearerTokenAuthentication bearerAuth = (BearerTokenAuthentication) authentication;
@@ -31,8 +31,7 @@ public class ApiController {
     @GetMapping("/jwt/message")
     public Map<String, Object> getJwtMessage(Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "这是一个使用JWT令牌保护的API端点");
-        
+        response.put("message", "This is an API endpoint protected by a JWT token");
         if (authentication.getPrincipal() instanceof Jwt) {
             Jwt jwt = (Jwt) authentication.getPrincipal();
             response.put("token_type", "jwt");

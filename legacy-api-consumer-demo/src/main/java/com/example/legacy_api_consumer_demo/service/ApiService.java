@@ -34,7 +34,7 @@ public class ApiService {
             return response.getBody();
         } catch (Exception e) {
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "API调用失败");
+            errorResponse.put("error", "API call failed");
             errorResponse.put("message", e.getMessage());
             return errorResponse;
         }

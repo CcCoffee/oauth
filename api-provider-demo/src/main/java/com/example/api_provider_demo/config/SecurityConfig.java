@@ -17,7 +17,7 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain opaqueTokenSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/api/opaque/**")  // 只处理不透明令牌的路径
+            .securityMatcher("/api/opaque/**")  // Only handle opaque token paths
             .authorizeHttpRequests(authorize -> authorize
                 .anyRequest().authenticated()
             )
@@ -36,7 +36,7 @@ public class SecurityConfig {
     @Order(2)
     public SecurityFilterChain jwtSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/api/jwt/**")  // 只处理JWT令牌的路径
+            .securityMatcher("/api/jwt/**")  // Only handle JWT token paths
             .authorizeHttpRequests(authorize -> authorize
                 .anyRequest().authenticated()
             )

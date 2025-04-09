@@ -1,16 +1,16 @@
-# API消费者演示项目
+# API Consumer Demo Project
 
-这是一个基于Spring Boot的OAuth2客户端演示项目，展示如何使用客户端凭证授权流程来访问受保护的API资源。
+This is a Spring Boot based OAuth2 client demo project, demonstrating how to use the client credentials grant flow to access protected API resources.
 
-## 项目架构
+## Project Architecture
 
-本项目是OAuth2授权架构中的客户端组件，与授权服务器和资源服务器配合使用：
+This project is a client component in the OAuth2 authorization architecture, working with the authorization server and resource server:
 
-- **授权服务器(api-auth-server)**：负责用户认证和颁发访问令牌
-- **资源服务器(api-provider-demo)**：提供受OAuth2保护的API资源
-- **客户端(api-consumer-demo)**：本项目，使用OAuth2访问受保护的API资源
+- **Authorization Server (api-auth-server)**: Responsible for user authentication and issuing access tokens
+- **Resource Server (api-provider-demo)**: Provides OAuth2 protected API resources
+- **Client (api-consumer-demo)**: This project, using OAuth2 to access protected API resources
 
-### 技术栈
+### Tech Stack
 
 - Java 21
 - Spring Boot 3.4.4
@@ -18,60 +18,60 @@
 - Spring OAuth2 Client
 - WebClient
 
-## 快速开始
+## Quick Start
 
-### 先决条件
+### Prerequisites
 
 - JDK 21+
 - Maven 3.6+
-- 已启动的授权服务器(默认端口9000)
-- 已启动的资源服务器(默认端口8090)
+- Running Authorization Server (default port 9000)
+- Running Resource Server (default port 8090)
 
-### 构建项目
+### Build the Project
 
 ```bash
 mvn clean package
 ```
 
-### 运行项目
+### Run the Project
 
 ```bash
 mvn spring-boot:run
 ```
 
-或者使用JAR文件启动：
+Or start with the JAR file:
 
 ```bash
 java -jar target/api-consumer-demo-0.0.1-SNAPSHOT.jar
 ```
 
-应用将在端口8080上启动。
+The application will start on port 8080.
 
-## API端点
+## API Endpoints
 
-本项目提供以下REST API端点：
+This project provides the following REST API endpoints:
 
-### OAuth2端点
+### OAuth2 Endpoints
 1. **GET /api/opaque**
-   - 使用不透明令牌访问受保护的资源
-   - 自动处理令牌获取和API调用
-   - 返回不透明令牌的属性信息
+   - Access protected resources using opaque token
+   - Automatically handle token acquisition and API calls
+   - Return attribute information of the opaque token
 
 2. **GET /api/jwt**
-   - 使用JWT令牌访问受保护的资源
-   - 自动处理令牌获取和API调用
-   - 返回JWT令牌的声明信息
+   - Access protected resources using JWT token
+   - Automatically handle token acquisition and API calls
+   - Return claim information of the JWT token
 
-### 其他端点
+### Other Endpoints
 1. **GET /api/direct**
-   - 直接使用不透明令牌访问受保护的资源
-   - 演示手动令牌获取和API调用
+   - Directly access protected resources using opaque token
+   - Demonstrate manual token acquisition and API calls
 
 2. **GET /api/info**
-   - 返回服务基本信息
-   - 不需要授权即可访问
+   - Return basic service information
+   - No authorization required to access
 
-## 项目结构
+## Project Structure
 
 ```
 api-consumer-demo/
@@ -81,29 +81,29 @@ api-consumer-demo/
 │   │   │   └── com/
 │   │   │       └── example/
 │   │   │           └── api_consumer_demo/
-│   │   │               ├── ApiConsumerDemoApplication.java     # 应用程序入口
+│   │   │               ├── ApiConsumerDemoApplication.java     # Application entry
 │   │   │               ├── config/
-│   │   │               │   ├── SecurityConfig.java             # 安全配置
-│   │   │               │   └── WebClientConfig.java            # WebClient配置
+│   │   │               │   ├── SecurityConfig.java             # Security configuration
+│   │   │               │   └── WebClientConfig.java            # WebClient configuration
 │   │   │               ├── controller/
-│   │   │               │   └── ApiController.java              # API控制器
+│   │   │               │   └── ApiController.java              # API controller
 │   │   │               └── service/
-│   │   │                   └── ApiService.java                 # API服务
+│   │   │                   └── ApiService.java                 # API service
 │   │   └── resources/
-│   │       └── application.yml                                 # 应用配置
+│   │       └── application.yml                                 # Application configuration
 │   └── test/
 │       └── java/
 │           └── com/
 │               └── example/
-│                   └── AppTest.java                            # 测试类
+│                   └── AppTest.java                            # Test class
 │       └── shell/
-│           └── api-test.sh                                     # API测试脚本
-└── pom.xml                                                     # Maven配置
+│           └── api-test.sh                                     # API test script
+└── pom.xml                                                     # Maven configuration
 ```
 
-## 配置说明
+## Configuration
 
-主要配置文件位于`src/main/resources/application.yml`：
+The main configuration file is located at `src/main/resources/application.yml`:
 
 ```yaml
 spring:
@@ -111,13 +111,13 @@ spring:
     oauth2:
       client:
         registration:
-          opaque-client:                                # 不透明令牌客户端配置
+          opaque-client:                                # Opaque token client configuration
             client-id: opaque-client
             client-secret: opaque-secret
             authorization-grant-type: client_credentials
             scope: message.read
             provider: spring
-          jwt-client:                                   # JWT令牌客户端配置
+          jwt-client:                                   # JWT token client configuration
             client-id: jwt-client
             client-secret: jwt-secret
             authorization-grant-type: client_credentials
@@ -128,27 +128,27 @@ spring:
             token-uri: http://localhost:9000/oauth2/token
 ```
 
-## 客户端凭证流程
+## Client Credentials Flow
 
-本项目支持两种令牌类型的客户端凭证流程：
+This project supports two types of token in the client credentials flow:
 
-### 不透明令牌流程
-1. 客户端使用`opaque-client`凭证请求不透明访问令牌
-2. 授权服务器验证客户端并颁发不透明令牌
-3. 客户端使用该令牌访问`/api/opaque/message`端点
-4. 资源服务器通过令牌内省验证令牌
+### Opaque Token Flow
+1. The client uses the `opaque-client` credential to request an opaque access token
+2. The authorization server validates the client and issues an opaque token
+3. The client uses this token to access the `/api/opaque/message` endpoint
+4. The resource server validates the token through token introspection
 
-### JWT令牌流程
-1. 客户端使用`jwt-client`凭证请求JWT访问令牌
-2. 授权服务器验证客户端并颁发JWT令牌
-3. 客户端使用该令牌访问`/api/jwt/message`端点
-4. 资源服务器直接验证JWT令牌
+### JWT Token Flow
+1. The client uses the `jwt-client` credential to request a JWT access token
+2. The authorization server validates the client and issues a JWT token
+3. The client uses this token to access the `/api/jwt/message` endpoint
+4. The resource server directly validates the JWT token
 
-## 测试方法
+## Testing Methods
 
-### 使用测试脚本
+### Using the Test Script
 
-项目包含一个Shell脚本，可自动测试所有API端点：
+The project includes a shell script that can automatically test all API endpoints:
 
 ```bash
 cd src/test/shell
@@ -156,65 +156,61 @@ chmod +x api-test.sh
 ./api-test.sh
 ```
 
-这个脚本会执行以下测试：
-1. 测试API信息端点
-2. 测试直接API访问端点
-3. 测试OAuth2不透明令牌端点
-4. 测试OAuth2 JWT令牌端点
-5. 直接测试授权服务器令牌端点
+This script will execute the following tests:
+1. Test the API info endpoint
+2. Test the direct API access endpoint
+3. Test the OAuth2 opaque token endpoint
+4. Test the OAuth2 JWT token endpoint
+5. Directly test the authorization server token endpoint
 
-### 使用curl命令
+### Using the curl Command
 
-也可以手动使用curl命令测试API端点：
+You can also manually test the API endpoints using the curl command:
 
 ```bash
-# 测试信息端点
+# Test the info endpoint
 curl -v http://localhost:8080/api/info
 
-# 测试不透明令牌端点
+# Test the opaque token endpoint
 curl -v http://localhost:8080/api/opaque
 
-# 测试JWT令牌端点
+# Test the JWT token endpoint
 curl -v http://localhost:8080/api/jwt
 
-# 测试直接访问端点
+# Test the direct access endpoint
 curl -v http://localhost:8080/api/direct
 ```
 
-## 预配置客户端
+## Preconfigured Clients
 
-使用以下OAuth2客户端访问授权服务器：
+Use the following OAuth2 clients to access the authorization server:
 
-### 不透明令牌客户端
+### Opaque Token Client
 ```
-客户端ID: opaque-client
-客户端密钥: opaque-secret
-授权类型: client_credentials
-作用域: message.read
-令牌格式: 不透明令牌
-有效期: 30分钟
-```
-
-### JWT令牌客户端
-```
-客户端ID: jwt-client
-客户端密钥: jwt-secret
-授权类型: client_credentials
-作用域: message.read
-令牌格式: JWT
-有效期: 1小时
+Client ID: opaque-client
+Client Secret: opaque-secret
+Authorization Type: client_credentials
+Scope: message.read
+Token Format: Opaque Token
+Validity Period: 30 minutes
 ```
 
-## 注意事项
+### JWT Token Client
+```
+Client ID: jwt-client
+Client Secret: jwt-secret
+Authorization Type: client_credentials
+Scope: message.read
+Token Format: JWT
+Validity Period: 1 hour
+```
 
-- 确保授权服务器和资源服务器已启动并可访问
-- 在生产环境中使用HTTPS保护所有通信
-- 客户端凭证应妥善保管，避免泄露
-- 定期更新客户端密钥
-- 使用适当的令牌类型：
-  - 不透明令牌：需要中央验证的场景
-  - JWT令牌：需要分布式验证的场景
+## Notes
 
-## 许可证
-
-本项目采用MIT许可证 
+- Ensure that the authorization server and resource server are running and accessible
+- Use HTTPS to protect all communication in production
+- Safeguard client credentials to avoid leakage
+- Regularly update client secrets
+- Use the appropriate token type:
+  - Opaque Token: For scenarios that require central validation
+  - JWT Token: For scenarios that require distributed validation

@@ -17,7 +17,7 @@ public class ApiController {
     @GetMapping("/jwt/message")
     public Map<String, Object> getJwtMessage(Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "这是一个使用JWT令牌保护的API端点");
+        response.put("message", "This is an API endpoint protected by a JWT token");
         
         if (authentication instanceof OAuth2Authentication) {
             OAuth2Authentication oauth2Auth = (OAuth2Authentication) authentication;

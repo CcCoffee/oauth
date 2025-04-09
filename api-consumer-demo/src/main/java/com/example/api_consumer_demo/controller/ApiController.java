@@ -32,13 +32,13 @@ public class ApiController {
             return ResponseEntity.ok(result);
         } catch (WebClientResponseException e) {
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "API调用失败");
+            errorResponse.put("error", "API call failed");
             errorResponse.put("status", e.getStatusCode().value());
             errorResponse.put("message", e.getMessage());
             return ResponseEntity.status(e.getStatusCode()).body(errorResponse);
         } catch (Exception e) {
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "内部服务器错误");
+            errorResponse.put("error", "Internal server error");
             errorResponse.put("message", e.getMessage());
             return ResponseEntity.internalServerError().body(errorResponse);
         }
@@ -52,13 +52,13 @@ public class ApiController {
             return ResponseEntity.ok(result);
         } catch (WebClientResponseException e) {
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "API调用失败");
+            errorResponse.put("error", "API call failed");
             errorResponse.put("status", e.getStatusCode().value());
             errorResponse.put("message", e.getMessage());
             return ResponseEntity.status(e.getStatusCode()).body(errorResponse);
         } catch (Exception e) {
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "内部服务器错误");
+            errorResponse.put("error", "Internal server error");
             errorResponse.put("message", e.getMessage());
             return ResponseEntity.internalServerError().body(errorResponse);
         }
@@ -76,8 +76,8 @@ public class ApiController {
     @GetMapping("/info")
     public ResponseEntity<Map<String, Object>> getInfo() {
         Map<String, Object> info = new HashMap<>();
-        info.put("service", "API消费者演示");
-        info.put("status", "正常运行");
+        info.put("service", "API consumer demo");
+        info.put("status", "Running normally");
         info.put("version", "1.0.0");
         return ResponseEntity.ok(info);
     }

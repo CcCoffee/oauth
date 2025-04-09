@@ -1,246 +1,246 @@
 #!/bin/bash
 
-# 环境变量设置
+# Environment variable settings
 API_CONSUMER_URL="http://localhost:8080"
 AUTH_SERVER_URL="http://localhost:9000"
 API_PROVIDER_URL="http://localhost:8090"
 
-# 不透明令牌客户端配置
+# Opaque token client configuration
 OPAQUE_CLIENT_ID="opaque-client"
 OPAQUE_CLIENT_SECRET="opaque-secret"
 
-# JWT令牌客户端配置
+# JWT token client configuration
 JWT_CLIENT_ID="jwt-client"
 JWT_CLIENT_SECRET="jwt-secret"
 
-# 彩色输出函数
+# Color output functions
 print_info() {
-  echo -e "\033[36m[信息]\033[0m $1"
+  echo -e "\033[36m[Info]\033[0m $1"
 }
 
 print_success() {
-  echo -e "\033[32m[成功]\033[0m $1"
+  echo -e "\033[32m[Success]\033[0m $1"
 }
 
 print_error() {
-  echo -e "\033[31m[错误]\033[0m $1"
+  echo -e "\033[31m[Error]\033[0m $1"
 }
 
 print_separator() {
   echo -e "\033[33m-------------------------------------------\033[0m"
 }
 
-# 检查jq是否安装
+# Check if jq is installed
 if ! command -v jq &> /dev/null; then
-  print_error "未找到jq工具，这个脚本需要jq来解析JSON。请安装jq后再运行此脚本。"
-  print_info "安装命令: brew install jq (Mac) 或 apt-get install jq (Ubuntu/Debian)"
+  print_error "jq tool not found, this script requires jq to parse JSON. Please install jq and run this script again."
+  print_info "Installation command: brew install jq (Mac) or apt-get install jq (Ubuntu/Debian)"
   exit 1
 fi
 
 print_separator
-print_info "API消费者测试脚本 - 测试客户端凭证授权流程"
+print_info "API Consumer Test Script - Testing Client Credential Authorization Flow"
 print_separator
 echo ""
 
-# 测试API信息端点
+# Test API information endpoint
 test_api_info() {
-  print_info "1. 测试API信息端点"
+  print_info "1. Testing API Information Endpoint"
   
-  # 获取API信息
+  # Get API information
   API_INFO_RESPONSE=$(curl -s -X GET "${API_CONSUMER_URL}/api/info")
   
-  # 检查是否成功获取信息
+  # Check if information was successfully retrieved
   if [ -z "$API_INFO_RESPONSE" ]; then
-    print_error "获取API信息失败，请确保API消费者服务正在运行。"
+    print_error "Failed to retrieve API information, ensure the API consumer service is running."
     return 1
   fi
   
-  print_success "已成功获取API信息！"
+  print_success "Successfully retrieved API information!"
   echo "$API_INFO_RESPONSE" | jq .
   echo ""
   
   return 0
 }
 
-# 测试直接API访问端点
+# Test direct API access endpoint
 test_direct_api() {
-  print_info "2. 测试直接API访问端点"
+  print_info "2. Testing Direct API Access Endpoint"
   
-  # 访问直接API端点
+  # Access direct API endpoint
   DIRECT_API_RESPONSE=$(curl -s -X GET "${API_CONSUMER_URL}/api/direct")
   
-  # 检查是否成功获取响应
+  # Check if response was successfully retrieved
   if [ -z "$DIRECT_API_RESPONSE" ]; then
-    print_error "访问直接API端点失败，请确保API消费者、授权服务器和API提供者都正在运行。"
+    print_error "Failed to access direct API endpoint, ensure the API consumer, authorization server, and API provider are all running."
     return 1
   fi
   
-  # 检查响应是否包含错误信息
+  # Check if response contains error information
   if echo "$DIRECT_API_RESPONSE" | jq -e 'has("error")' > /dev/null; then
-    print_error "访问直接API端点返回错误："
+    print_error "Accessing direct API endpoint returned error:"
     echo "$DIRECT_API_RESPONSE" | jq .
     return 1
   fi
   
-  print_success "已成功访问直接API端点！"
+  print_success "Successfully accessed direct API endpoint!"
   echo "$DIRECT_API_RESPONSE" | jq .
   echo ""
   
   return 0
 }
 
-# 测试OAuth2客户端凭证授权API端点（使用不透明令牌）
+# Test OAuth2 client credential authorization API endpoint (using opaque token)
 test_oauth2_opaque_api() {
-  print_info "3. 测试OAuth2客户端凭证授权API端点（不透明令牌）"
+  print_info "3. Testing OAuth2 Client Credential Authorization API Endpoint (Opaque Token)"
   
-  # 访问OAuth2 API端点
+  # Access OAuth2 API endpoint
   OAUTH2_API_RESPONSE=$(curl -s -X GET "${API_CONSUMER_URL}/api/opaque")
   
-  # 检查是否成功获取响应
+  # Check if response was successfully retrieved
   if [ -z "$OAUTH2_API_RESPONSE" ]; then
-    print_error "访问OAuth2 API端点失败，请确保API消费者、授权服务器和API提供者都正在运行。"
+    print_error "Failed to access OAuth2 API endpoint, ensure the API consumer, authorization server, and API provider are all running."
     return 1
   fi
   
-  # 检查响应是否包含错误信息
+  # Check if response contains error information
   if echo "$OAUTH2_API_RESPONSE" | jq -e 'has("error")' > /dev/null; then
-    print_error "访问OAuth2 API端点返回错误："
+    print_error "Accessing OAuth2 API endpoint returned error:"
     echo "$OAUTH2_API_RESPONSE" | jq .
     return 1
   fi
   
-  print_success "已成功访问OAuth2 API端点（不透明令牌）！"
+  print_success "Successfully accessed OAuth2 API endpoint (Opaque Token)!"
   echo "$OAUTH2_API_RESPONSE" | jq .
   echo ""
   
   return 0
 }
 
-# 测试OAuth2客户端凭证授权API端点（使用JWT令牌）
+# Test OAuth2 client credential authorization API endpoint (using JWT token)
 test_oauth2_jwt_api() {
-  print_info "4. 测试OAuth2客户端凭证授权API端点（JWT令牌）"
+  print_info "4. Testing OAuth2 Client Credential Authorization API Endpoint (JWT Token)"
   
-  # 访问OAuth2 API端点
+  # Access OAuth2 API endpoint
   OAUTH2_API_RESPONSE=$(curl -s -X GET "${API_CONSUMER_URL}/api/jwt")
   
-  # 检查是否成功获取响应
+  # Check if response was successfully retrieved
   if [ -z "$OAUTH2_API_RESPONSE" ]; then
-    print_error "访问OAuth2 API端点失败，请确保API消费者、授权服务器和API提供者都正在运行。"
+    print_error "Failed to access OAuth2 API endpoint, ensure the API consumer, authorization server, and API provider are all running."
     return 1
   fi
   
-  # 检查响应是否包含错误信息
+  # Check if response contains error information
   if echo "$OAUTH2_API_RESPONSE" | jq -e 'has("error")' > /dev/null; then
-    print_error "访问OAuth2 API端点返回错误："
+    print_error "Accessing OAuth2 API endpoint returned error:"
     echo "$OAUTH2_API_RESPONSE" | jq .
     return 1
   fi
   
-  print_success "已成功访问OAuth2 API端点（JWT令牌）！"
+  print_success "Successfully accessed OAuth2 API endpoint (JWT Token)!"
   echo "$OAUTH2_API_RESPONSE" | jq .
   echo ""
   
   return 0
 }
 
-# 直接测试授权服务器令牌端点
+# Directly test authorization server token endpoint
 test_auth_server_token() {
-  print_info "5. 直接测试授权服务器令牌端点"
-  print_info "正在从授权服务器获取访问令牌..."
+  print_info "5. Directly Testing Authorization Server Token Endpoint"
+  print_info "Attempting to get access token from authorization server..."
 
-  # 获取访问令牌
+  # Get access token
   ACCESS_TOKEN_RESPONSE=$(curl -s -X POST -u "${OPAQUE_CLIENT_ID}:${OPAQUE_CLIENT_SECRET}" \
     "${AUTH_SERVER_URL}/oauth2/token" \
     -d "grant_type=client_credentials&scope=message.read" \
     -H "Content-Type: application/x-www-form-urlencoded")
 
-  # 检查是否成功获取令牌
+  # Check if token was successfully retrieved
   if [ -z "$ACCESS_TOKEN_RESPONSE" ]; then
-    print_error "获取令牌失败，请确保授权服务器正在运行。"
+    print_error "Failed to get token, ensure the authorization server is running."
     return 1
   fi
 
-  # 提取令牌
+  # Extract token
   ACCESS_TOKEN=$(echo $ACCESS_TOKEN_RESPONSE | jq -r '.access_token')
   
   if [ "$ACCESS_TOKEN" == "null" ] || [ -z "$ACCESS_TOKEN" ]; then
-    print_error "获取令牌失败，响应内容："
+    print_error "Failed to get token, response content:"
     echo $ACCESS_TOKEN_RESPONSE | jq .
     return 1
   fi
 
-  print_success "已获取访问令牌！"
-  print_info "令牌类型: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.token_type')"
-  print_info "有效期: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.expires_in') 秒"
-  print_info "作用域: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.scope')"
+  print_success "Access token obtained!"
+  print_info "Token type: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.token_type')"
+  print_info "Expires in: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.expires_in') seconds"
+  print_info "Scope: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.scope')"
   
-  # 显示令牌的前20个字符
+  # Display the first 20 characters of the token
   TOKEN_PREVIEW="${ACCESS_TOKEN:0:20}..."
-  print_info "访问令牌 (部分): $TOKEN_PREVIEW"
+  print_info "Access token (partial): $TOKEN_PREVIEW"
 
   echo ""
-  print_info "正在使用获取的令牌直接访问API提供者..."
+  print_info "Using the obtained token to directly access the API provider..."
   
-  # 直接访问API提供者
+  # Directly access the API provider
   PROVIDER_API_RESPONSE=$(curl -s -X GET \
     "${API_PROVIDER_URL}/api/opaque/message" \
     -H "Authorization: Bearer ${ACCESS_TOKEN}")
 
-  # 检查API响应
+  # Check API response
   if [ -z "$PROVIDER_API_RESPONSE" ]; then
-    print_error "访问API提供者失败，请确保API提供者正在运行。"
+    print_error "Failed to access API provider, ensure the API provider is running."
     return 1
   fi
 
-  print_success "成功直接访问API提供者！响应内容："
+  print_success "Successfully directly accessed API provider! Response content:"
   echo "$PROVIDER_API_RESPONSE" | jq .
   
   return 0
 }
 
-# 主函数
+# Main function
 main() {
-  # 检查API消费者是否可访问
-  print_info "检查API消费者是否可访问..."
+  # Check if API consumer is accessible
+  print_info "Checking if API consumer is accessible..."
   if curl -s --head "${API_CONSUMER_URL}" >/dev/null; then
-    print_success "API消费者可访问"
+    print_success "API consumer is accessible"
   else
-    print_error "无法访问API消费者，请确保服务在 ${API_CONSUMER_URL} 上运行"
+    print_error "Unable to access API consumer, ensure the service is running at ${API_CONSUMER_URL}"
     exit 1
   fi
 
-  # 检查授权服务器是否可访问
-  print_info "检查授权服务器是否可访问..."
+  # Check if authorization server is accessible
+  print_info "Checking if authorization server is accessible..."
   if curl -s --head "${AUTH_SERVER_URL}" >/dev/null; then
-    print_success "授权服务器可访问"
+    print_success "Authorization server is accessible"
   else
-    print_error "无法访问授权服务器，请确保服务器在 ${AUTH_SERVER_URL} 上运行"
+    print_error "Unable to access authorization server, ensure the service is running at ${AUTH_SERVER_URL}"
     exit 1
   fi
 
-  # 检查API提供者是否可访问
-  print_info "检查API提供者是否可访问..."
+  # Check if API provider is accessible
+  print_info "Checking if API provider is accessible..."
   if curl -s --head "${API_PROVIDER_URL}" >/dev/null; then
-    print_success "API提供者可访问"
+    print_success "API provider is accessible"
   else
-    print_error "无法访问API提供者，请确保服务器在 ${API_PROVIDER_URL} 上运行"
+    print_error "Unable to access API provider, ensure the service is running at ${API_PROVIDER_URL}"
     exit 1
   fi
 
   echo ""
   
-  # 运行测试
+  # Run tests
   test_api_info
   test_direct_api
   test_oauth2_opaque_api
   test_oauth2_jwt_api
   test_auth_server_token
   
-  # 显示完成信息
+  # Display completion information
   print_separator
-  print_success "测试完成！"
+  print_success "Testing completed!"
   print_separator
 }
 
-# 执行主函数
-main 
+# Execute main function
+main

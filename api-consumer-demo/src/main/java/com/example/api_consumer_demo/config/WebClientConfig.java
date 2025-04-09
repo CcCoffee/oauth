@@ -43,11 +43,11 @@ public class WebClientConfig {
                 .build();
     }
     
-    // 添加日志过滤器，帮助调试请求
+    // Add a logging filter to help debug requests
     private ExchangeFilterFunction logRequest() {
         return ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
-            System.out.println("请求: " + clientRequest.method() + " " + clientRequest.url());
-            System.out.println("请求头: " + clientRequest.headers());
+            System.out.println("Request: " + clientRequest.method() + " " + clientRequest.url());
+            System.out.println("Request headers: " + clientRequest.headers());
             return Mono.just(clientRequest);
         });
     }

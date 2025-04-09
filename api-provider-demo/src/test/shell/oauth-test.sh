@@ -1,188 +1,188 @@
 #!/bin/bash
 
-# 环境变量设置
+# Environment variables
 AUTH_SERVER_URL="http://localhost:9000"
 API_PROVIDER_URL="http://localhost:8090"
 
-# 不透明令牌客户端配置
+# Opaque token client configuration
 OPAQUE_CLIENT_ID="opaque-client"
 OPAQUE_CLIENT_SECRET="opaque-secret"
 
-# JWT令牌客户端配置
+# JWT token client configuration
 JWT_CLIENT_ID="jwt-client"
 JWT_CLIENT_SECRET="jwt-secret"
 
-# 彩色输出函数
+# Colored output functions
 print_info() {
-  echo -e "\033[36m[信息]\033[0m $1"
+  echo -e "\033[36m[Info]\033[0m $1"
 }
 
 print_success() {
-  echo -e "\033[32m[成功]\033[0m $1"
+  echo -e "\033[32m[Success]\033[0m $1"
 }
 
 print_error() {
-  echo -e "\033[31m[错误]\033[0m $1"
+  echo -e "\033[31m[Error]\033[0m $1"
 }
 
 print_separator() {
   echo -e "\033[33m-------------------------------------------\033[0m"
 }
 
-# 检查jq是否安装
+# Check if jq is installed
 if ! command -v jq &> /dev/null; then
-  print_error "未找到jq工具，这个脚本需要jq来解析JSON。请安装jq后再运行此脚本。"
-  print_info "安装命令: brew install jq (Mac) 或 apt-get install jq (Ubuntu/Debian)"
+  print_error "jq tool not found, this script requires jq to parse JSON. Please install jq before running this script."
+  print_info "Installation command: brew install jq (Mac) or apt-get install jq (Ubuntu/Debian)"
   exit 1
 fi
 
 print_separator
-print_info "OAuth2.0测试脚本 - 测试授权服务器和API提供者"
+print_info "OAuth2.0 Test Script - Test Authorization Server and API Provider"
 print_separator
 echo ""
 
-# 1. 测试不透明令牌客户端凭证授权流程
+# 1. Test opaque token client credentials flow
 test_opaque_client_credentials() {
-  print_info "1. 测试不透明令牌客户端凭证授权流程"
-  print_info "正在从授权服务器获取不透明访问令牌..."
+  print_info "1. Test opaque token client credentials flow"
+  print_info "Getting opaque access token from the authorization server..."
 
-  # 获取访问令牌
+  # Get access token
   ACCESS_TOKEN_RESPONSE=$(curl -s -X POST -u "${OPAQUE_CLIENT_ID}:${OPAQUE_CLIENT_SECRET}" \
     "${AUTH_SERVER_URL}/oauth2/token" \
     -d "grant_type=client_credentials&scope=message.read" \
     -H "Content-Type: application/x-www-form-urlencoded")
 
-  # 检查是否成功获取令牌
+  # Check if token is successfully obtained
   if [ -z "$ACCESS_TOKEN_RESPONSE" ]; then
-    print_error "获取令牌失败，请确保授权服务器正在运行。"
+    print_error "Failed to get token, please make sure the authorization server is running."
     return 1
   fi
 
-  # 提取令牌
+  # Extract token
   ACCESS_TOKEN=$(echo $ACCESS_TOKEN_RESPONSE | jq -r '.access_token')
   
   if [ "$ACCESS_TOKEN" == "null" ] || [ -z "$ACCESS_TOKEN" ]; then
-    print_error "获取令牌失败，响应内容："
+    print_error "Failed to get token, response content:"
     echo $ACCESS_TOKEN_RESPONSE | jq .
     return 1
   fi
 
-  print_success "已获取不透明访问令牌！"
-  print_info "令牌类型: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.token_type')"
-  print_info "有效期: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.expires_in') 秒"
-  print_info "作用域: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.scope')"
+  print_success "Opaque access token obtained!"
+  print_info "Token type: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.token_type')"
+  print_info "Expires in: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.expires_in') seconds"
+  print_info "Scope: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.scope')"
   
-  # 显示令牌的前20个字符
+  # Display the first 20 characters of the token
   TOKEN_PREVIEW="${ACCESS_TOKEN:0:20}..."
-  print_info "访问令牌 (部分): $TOKEN_PREVIEW"
+  print_info "Access token (partial): $TOKEN_PREVIEW"
 
   echo ""
-  print_info "正在使用不透明访问令牌访问受保护的API..."
+  print_info "Accessing protected API using opaque access token..."
   
-  # 访问受保护的API
+  # Access protected API
   API_RESPONSE=$(curl -s -X GET \
     "${API_PROVIDER_URL}/api/opaque/message" \
     -H "Authorization: Bearer ${ACCESS_TOKEN}")
 
-  # 检查API响应
+  # Check API response
   if [ -z "$API_RESPONSE" ]; then
-    print_error "访问API失败，请确保API提供者正在运行。"
+    print_error "Failed to access API, please make sure the API provider is running."
     return 1
   fi
 
-  print_success "成功使用不透明令牌访问受保护的API！响应内容："
+  print_success "Successfully accessed protected API using opaque token! Response content:"
   echo "$API_RESPONSE" | jq .
   echo ""
   
   return 0
 }
 
-# 2. 测试JWT令牌客户端凭证授权流程
+# 2. Test JWT token client credentials flow
 test_jwt_client_credentials() {
-  print_info "2. 测试JWT令牌客户端凭证授权流程"
-  print_info "正在从授权服务器获取JWT访问令牌..."
+  print_info "2. Test JWT token client credentials flow"
+  print_info "Getting JWT access token from the authorization server..."
 
-  # 获取访问令牌
+  # Get access token
   ACCESS_TOKEN_RESPONSE=$(curl -s -X POST -u "${JWT_CLIENT_ID}:${JWT_CLIENT_SECRET}" \
     "${AUTH_SERVER_URL}/oauth2/token" \
     -d "grant_type=client_credentials&scope=message.read" \
     -H "Content-Type: application/x-www-form-urlencoded")
 
-  # 检查是否成功获取令牌
+  # Check if token is successfully obtained
   if [ -z "$ACCESS_TOKEN_RESPONSE" ]; then
-    print_error "获取令牌失败，请确保授权服务器正在运行。"
+    print_error "Failed to get token, please make sure the authorization server is running."
     return 1
   fi
 
-  # 提取令牌
+  # Extract token
   ACCESS_TOKEN=$(echo $ACCESS_TOKEN_RESPONSE | jq -r '.access_token')
   
   if [ "$ACCESS_TOKEN" == "null" ] || [ -z "$ACCESS_TOKEN" ]; then
-    print_error "获取令牌失败，响应内容："
+    print_error "Failed to get token, response content:"
     echo $ACCESS_TOKEN_RESPONSE | jq .
     return 1
   fi
 
-  print_success "已获取JWT访问令牌！"
-  print_info "令牌类型: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.token_type')"
-  print_info "有效期: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.expires_in') 秒"
-  print_info "作用域: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.scope')"
+  print_success "JWT access token obtained!"
+  print_info "Token type: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.token_type')"
+  print_info "Expires in: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.expires_in') seconds"
+  print_info "Scope: $(echo $ACCESS_TOKEN_RESPONSE | jq -r '.scope')"
   
-  # 显示令牌的前20个字符
+  # Display the first 20 characters of the token
   TOKEN_PREVIEW="${ACCESS_TOKEN:0:20}..."
-  print_info "访问令牌 (部分): $TOKEN_PREVIEW"
+  print_info "Access token (partial): $TOKEN_PREVIEW"
 
   echo ""
-  print_info "正在使用JWT访问令牌访问受保护的API..."
+  print_info "Accessing protected API using JWT access token..."
   
-  # 访问受保护的API
+  # Access protected API
   API_RESPONSE=$(curl -s -X GET \
     "${API_PROVIDER_URL}/api/jwt/message" \
     -H "Authorization: Bearer ${ACCESS_TOKEN}")
 
-  # 检查API响应
+  # Check API response
   if [ -z "$API_RESPONSE" ]; then
-    print_error "访问API失败，请确保API提供者正在运行。"
+    print_error "Failed to access API, please make sure the API provider is running."
     return 1
   fi
 
-  print_success "成功使用JWT令牌访问受保护的API！响应内容："
+  print_success "Successfully accessed protected API using JWT token! Response content:"
   echo "$API_RESPONSE" | jq .
   echo ""
   
   return 0
 }
 
-# 主函数
+# Main function
 main() {
-  # 检查授权服务器是否可访问
-  print_info "检查授权服务器是否可访问..."
+  # Check if the authorization server is accessible
+  print_info "Checking if the authorization server is accessible..."
   if curl -s --head "${AUTH_SERVER_URL}" >/dev/null; then
-    print_success "授权服务器可访问"
+    print_success "Authorization server is accessible"
   else
-    print_error "无法访问授权服务器，请确保服务器在 ${AUTH_SERVER_URL} 上运行"
+    print_error "Unable to access the authorization server, please make sure the server is running at ${AUTH_SERVER_URL}"
     exit 1
   fi
 
-  # 检查API提供者是否可访问
-  print_info "检查API提供者是否可访问..."
+  # Check if the API provider is accessible
+  print_info "Checking if the API provider is accessible..."
   if curl -s --head "${API_PROVIDER_URL}" >/dev/null; then
-    print_success "API提供者可访问"
+    print_success "API provider is accessible"
   else
-    print_error "无法访问API提供者，请确保服务器在 ${API_PROVIDER_URL} 上运行"
+    print_error "Unable to access the API provider, please make sure the server is running at ${API_PROVIDER_URL}"
     exit 1
   fi
 
   echo ""
-  # 运行客户端凭证流程测试
+  # Run client credentials flow tests
   test_opaque_client_credentials
   test_jwt_client_credentials
   
-  # 显示完成信息
+  # Display completion information
   print_separator
-  print_success "测试完成！"
+  print_success "Testing completed!"
   print_separator
 }
 
-# 执行主函数
+# Execute the main function
 main 

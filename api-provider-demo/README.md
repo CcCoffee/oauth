@@ -1,69 +1,69 @@
-# API提供者演示项目
+# API Provider Demo Project
 
-这是一个基于Spring Boot的OAuth2资源服务器演示项目，演示如何创建受客户端凭证授权保护的API端点。
+This is a Spring Boot-based OAuth2 resource server demo project, demonstrating how to create API endpoints protected by client credentials authorization.
 
-## 项目架构
+## Project Architecture
 
-本项目是OAuth2授权架构中的资源服务器组件，与授权服务器配合使用：
+This project is the resource server component in the OAuth2 authorization architecture, working in conjunction with the authorization server:
 
-- **授权服务器(api-auth-server)**：负责颁发和验证OAuth2令牌
-- **API提供者(api-provider-demo)**：本项目，提供受OAuth2保护的API资源
-- **API消费者(api-consumer-demo)**：客户端应用，使用客户端凭证访问API
+- **Authorization Server (api-auth-server)**: responsible for issuing and validating OAuth2 tokens
+- **API Provider (api-provider-demo)**: this project, providing API resources protected by OAuth2
+- **API Consumer (api-consumer-demo)**: client application, accessing API using client credentials
 
-### 技术栈
+### Technology Stack
 
 - Java 21
 - Spring Boot 3.4.4
 - Spring Security
 - Spring OAuth2 Resource Server
 
-## 快速开始
+## Quick Start
 
-### 先决条件
+### Prerequisites
 
 - JDK 21+
 - Maven 3.6+
-- 已启动的授权服务器(默认端口9000)
+- Authorization server running (default port 9000)
 
-### 构建项目
+### Building the Project
 
 ```bash
 mvn clean package
 ```
 
-### 运行项目
+### Running the Project
 
 ```bash
 mvn spring-boot:run
 ```
 
-或者使用JAR文件启动：
+Or use the JAR file to start:
 
 ```bash
 java -jar target/api-provider-demo-0.0.1-SNAPSHOT.jar
 ```
 
-服务将在端口8090上启动。
+The service will start on port 8090.
 
-## API端点
+## API Endpoints
 
-项目提供以下API端点：
+The project provides the following API endpoints:
 
-### 不透明令牌端点
-- **GET /api/opaque/message**：使用不透明令牌保护的API端点
-- 需要有效的不透明访问令牌
-- 返回令牌属性信息和消息
+### Opaque Token Endpoint
+- **GET /api/opaque/message**: API endpoint protected by opaque token
+- Requires a valid opaque access token
+- Returns token attribute information and message
 
-### JWT令牌端点
-- **GET /api/jwt/message**：使用JWT令牌保护的API端点
-- 需要有效的JWT访问令牌
-- 返回JWT声明信息和消息
+### JWT Token Endpoint
+- **GET /api/jwt/message**: API endpoint protected by JWT token
+- Requires a valid JWT access token
+- Returns JWT claim information and message
 
-## 安全配置
+## Security Configuration
 
-资源服务器配置了两种安全机制：
+The resource server is configured with two security mechanisms:
 
-### 不透明令牌配置
+### Opaque Token Configuration
 ```java
 .securityMatcher("/api/opaque/**")
 .oauth2ResourceServer(oauth2 -> oauth2
@@ -73,7 +73,7 @@ java -jar target/api-provider-demo-0.0.1-SNAPSHOT.jar
 )
 ```
 
-### JWT令牌配置
+### JWT Token Configuration
 ```java
 .securityMatcher("/api/jwt/**")
 .oauth2ResourceServer(oauth2 -> oauth2
@@ -81,69 +81,69 @@ java -jar target/api-provider-demo-0.0.1-SNAPSHOT.jar
 )
 ```
 
-## 配置说明
+## Configuration Explanation
 
-主要配置文件位于`src/main/resources/application.yml`：
+The main configuration file is located at `src/main/resources/application.yml`:
 
 ```yaml
 server:
-  port: 8090  # 项目端口
+  port: 8090  # Project port
 
 spring:
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9000  # 授权服务器地址
+          issuer-uri: http://localhost:9000  # Authorization server address
 ```
 
-## 客户端凭证流程
+## Client Credentials Flow
 
-API提供者支持两种令牌验证流程：
+The API provider supports two token validation flows:
 
-### 不透明令牌流程
-1. 客户端携带不透明令牌访问API
-2. 资源服务器使用`resource-server`凭证调用内省端点
-3. 授权服务器验证令牌并返回令牌信息
-4. 资源服务器验证权限并处理请求
+### Opaque Token Flow
+1. Client carries opaque token to access API
+2. Resource server uses `resource-server` credentials to call introspection endpoint
+3. Authorization server validates token and returns token information
+4. Resource server validates permissions and processes request
 
-### JWT令牌流程
-1. 客户端携带JWT令牌访问API
-2. 资源服务器使用公钥验证JWT签名
-3. 资源服务器验证JWT声明（过期时间、作用域等）
-4. 验证通过后处理请求
+### JWT Token Flow
+1. Client carries JWT token to access API
+2. Resource server uses public key to validate JWT signature
+3. Resource server validates JWT claims (expiration time, scope, etc.)
+4. After validation, processes request
 
-## 测试API
+## Testing API
 
-您可以使用curl命令测试API端点：
+You can use curl commands to test API endpoints:
 
-### 测试不透明令牌端点
+### Testing Opaque Token Endpoint
 ```bash
-# 首先获取不透明访问令牌
+# First, get an opaque access token
 curl -X POST -u "opaque-client:opaque-secret" \
   "http://localhost:9000/oauth2/token" \
   -d "grant_type=client_credentials&scope=message.read" \
   -H "Content-Type: application/x-www-form-urlencoded"
 
-# 使用获取的令牌访问API
+# Use the obtained token to access API
 curl -X GET "http://localhost:8090/api/opaque/message" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
-### 测试JWT令牌端点
+### Testing JWT Token Endpoint
 ```bash
-# 首先获取JWT访问令牌
+# First, get a JWT access token
 curl -X POST -u "jwt-client:jwt-secret" \
   "http://localhost:9000/oauth2/token" \
   -d "grant_type=client_credentials&scope=message.read" \
   -H "Content-Type: application/x-www-form-urlencoded"
 
-# 使用获取的令牌访问API
+# Use the obtained token to access API
 curl -X GET "http://localhost:8090/api/jwt/message" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
-## 项目结构
+## Project Structure
 
 ```
 api-provider-demo/
@@ -153,44 +153,40 @@ api-provider-demo/
 │   │   │   └── com/
 │   │   │       └── example/
 │   │   │           └── api_provider_demo/
-│   │   │               ├── ApiProviderDemoApplication.java    # 应用程序入口
+│   │   │               ├── ApiProviderDemoApplication.java    # Application entry point
 │   │   │               ├── config/
-│   │   │               │   └── SecurityConfig.java            # 安全配置
+│   │   │               │   └── SecurityConfig.java            # Security configuration
 │   │   │               └── controller/
-│   │   │                   └── ApiController.java             # API控制器
+│   │   │                   └── ApiController.java             # API controller
 │   │   └── resources/
-│   │       └── application.yml                                # 应用配置
+│   │       └── application.yml                                # Application configuration
 │   └── test/
 │       └── java/
 │           └── com/
 │               └── example/
-│                   └── AppTest.java                           # 测试类
-└── pom.xml                                                    # Maven配置
+│                   └── AppTest.java                           # Test class
+└── pom.xml                                                    # Maven configuration
 ```
 
-## 令牌验证
+## Token Validation
 
-资源服务器会验证令牌的以下信息：
+The resource server validates the following information for tokens:
 
-### 不透明令牌验证
-- 令牌是否处于活动状态（active）
-- 令牌是否在有效期内
-- 令牌是否具有所需的作用域
-- 令牌的客户端ID是否正确
+### Opaque Token Validation
+- Token is active
+- Token is within its validity period
+- Token has the required scope
+- Token's client ID is correct
 
-### JWT令牌验证
-- 令牌签名是否有效
-- 颁发者(issuer)是否正确
-- 令牌是否在有效期内
-- 令牌是否包含必要的作用域(scope)
+### JWT Token Validation
+- Token signature is valid
+- Issuer is correct
+- Token is within its validity period
+- Token includes necessary scope
 
-## 注意事项
+## Notes
 
-- 确保授权服务器已启动并可访问
-- 在生产环境中使用HTTPS保护API通信
-- 适当配置CORS以支持来自不同源的客户端请求
-- 定期更新JWT签名密钥
-
-## 许可证
-
-本项目采用MIT许可证 
+- Ensure the authorization server is running and accessible
+- Use HTTPS to protect API communication in production
+- Configure CORS appropriately to support client requests from different origins
+- Periodically update JWT signing keys

@@ -29,12 +29,11 @@ public class ApiController {
         }
         return ResponseEntity.ok(result);
     }
-    
     @GetMapping("/info")
     public ResponseEntity<Map<String, Object>> getInfo() {
         Map<String, Object> info = new HashMap<>();
-        info.put("service", "旧版API消费者演示");
-        info.put("status", "正常运行");
+        info.put("service", "Legacy API Consumer Demo");
+        info.put("status", "Running normally");
         info.put("version", "1.0.0");
         return ResponseEntity.ok(info);
     }
