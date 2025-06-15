@@ -12,10 +12,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * Controller for legacy OAuth2 endpoints
@@ -31,6 +33,12 @@ public class LegacyOAuthController {
     
     @Value("${app.jwt.keystore.key-alias}")
     private String keyAlias;
+
+    private final JwtDecoder jwtDecoder;
+
+    public LegacyOAuthController(JwtDecoder jwtDecoder) {
+        this.jwtDecoder = jwtDecoder;
+    }
     
     /**
      * Provides public key information interface, compatible with spring-cloud-starter-oauth2
@@ -75,4 +83,26 @@ public class LegacyOAuthController {
         RequestDispatcher dispatcher = request.getRequestDispatcher("/oauth2/token");
         dispatcher.forward(request, response);
     }
+
+    @PostMapping("/oauth/check_token")
+    public ResponseEntity<Map<String, Object>> checkToken(@RequestParam("token") String token) {
+        try {
+            Jwt jwt = jwtDecoder.decode(token);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("active", true);
+            response.put("exp", jwt.getExpiresAt().toEpochMilli() / 1000);
+            response.put("client_id", jwt.getClaimAsString("client_id"));
+            response.put("jti", jwt.getId());
+            response.put("scope", jwt.getClaimAsStringList("scope"));
+            response.put("aud", jwt.getAudience());
+
+            return ResponseEntity.ok(response);
+        } catch (JwtException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("active", false);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
 } 
