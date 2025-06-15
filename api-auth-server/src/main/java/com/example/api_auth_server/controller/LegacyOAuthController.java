@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.security.oauth2.jwt.JwtValidationException;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -98,9 +99,11 @@ public class LegacyOAuthController {
             response.put("aud", jwt.getAudience());
 
             return ResponseEntity.ok(response);
-        } catch (JwtException e) {
+        } catch (JwtValidationException e) {
+            String msg = e.getMessage();
             Map<String, Object> error = new HashMap<>();
-            error.put("active", false);
+            error.put("error", "invalid_token");
+            error.put("error_description", msg);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
