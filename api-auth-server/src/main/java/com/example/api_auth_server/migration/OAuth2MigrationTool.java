@@ -1,10 +1,14 @@
 package com.example.api_auth_server.migration;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +40,8 @@ import java.time.Instant;
 import java.util.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.io.IOException;
+import java.util.stream.Collectors;
 
 import com.example.api_auth_server.util.EncryptUtil;
 
@@ -54,6 +60,8 @@ public class OAuth2MigrationTool {
     
     @Autowired
     private ObjectMapper objectMapper;
+
+    private ObjectMapper typeObjectMapper;
     
     @Autowired
     private RegisteredClientRepository registeredClientRepository;
@@ -66,6 +74,52 @@ public class OAuth2MigrationTool {
     
     @Autowired
     private EncryptUtil encryptUtil;
+
+    @Autowired
+    public OAuth2MigrationTool(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+        configureObjectMapper();
+    }
+
+    private void configureObjectMapper() {
+        typeObjectMapper = new ObjectMapper();
+        
+        // 创建一个模块来处理特殊类型
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(Instant.class, new com.fasterxml.jackson.databind.JsonSerializer<Instant>() {
+            private void writeInstantAsNumber(Instant value, com.fasterxml.jackson.core.JsonGenerator gen) 
+                    throws IOException {
+                double seconds = value.getEpochSecond() + value.getNano() / 1_000_000_000.0;
+                String formattedNumber = String.format("%.9f", seconds);
+                gen.writeRawValue(formattedNumber);
+            }
+
+            @Override
+            public void serialize(Instant value, com.fasterxml.jackson.core.JsonGenerator gen, 
+                                com.fasterxml.jackson.databind.SerializerProvider serializers) 
+                    throws IOException {
+                writeInstantAsNumber(value, gen);
+            }
+
+            @Override
+            public void serializeWithType(Instant value, com.fasterxml.jackson.core.JsonGenerator gen,
+                                        com.fasterxml.jackson.databind.SerializerProvider serializers,
+                                        com.fasterxml.jackson.databind.jsontype.TypeSerializer typeSer)
+                    throws IOException {
+                gen.writeStartArray();
+                gen.writeString(Instant.class.getName());
+                writeInstantAsNumber(value, gen);
+                gen.writeEndArray();
+            }
+        });
+        typeObjectMapper.registerModule(module);
+        
+        typeObjectMapper.activateDefaultTyping(
+            typeObjectMapper.getPolymorphicTypeValidator(),
+            ObjectMapper.DefaultTyping.NON_FINAL,
+            JsonTypeInfo.As.PROPERTY
+        );
+    }
     
     /**
      * Migrate client details data
@@ -389,19 +443,8 @@ public class OAuth2MigrationTool {
                     );
                     
                     // Create authorization object
-                    OAuth2Authorization.Builder authorizationBuilder = OAuth2Authorization.withRegisteredClient(registeredClient)
-                            .principalName(clientId)
-                            .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                            .authorizedScopes(scopes);
-                    
-                    // Set Token attributes
-                    authorizationBuilder.token(
-                            accessToken,
-                            metadata -> {
-                                metadata.put(OAuth2Authorization.Token.CLAIMS_METADATA_NAME, new HashMap<String, Object>());
-                                metadata.put(OAuth2Authorization.Token.INVALIDATED_METADATA_NAME, false);
-                            }
-                    );
+                    OAuth2Authorization.Builder authorizationBuilder = createAuthorizationBuilder(
+                            registeredClient, clientId, scopes, accessToken);
                     
                     // Save authorization object
                     OAuth2Authorization authorization = authorizationBuilder.build();
@@ -416,12 +459,12 @@ public class OAuth2MigrationTool {
                             authorization.getAuthorizationGrantType().getValue(),
                             writeMap(authorization.getAttributes()),
                             null,
-                            writeSet(authorization.getAuthorizedScopes()),
+                            authorization.getAuthorizedScopes().stream().collect(Collectors.joining(" ")),
                             accessToken.getTokenValue(),
                             Timestamp.from(accessToken.getIssuedAt()),
                             Timestamp.from(accessToken.getExpiresAt()),
                             accessToken.getTokenType().getValue(),
-                            writeSet(accessToken.getScopes()),
+                            accessToken.getScopes().stream().collect(Collectors.joining(" ")),
                             writeMap(authorization.getAccessToken().getMetadata())
                     );
                     
@@ -512,14 +555,14 @@ public class OAuth2MigrationTool {
      * Convert Map object to JSON string
      */
     private String writeMap(Map<String, Object> map) throws JsonProcessingException {
-        return objectMapper.writeValueAsString(map);
+        return typeObjectMapper.writeValueAsString(map);
     }
     
     /**
      * Convert Set object to JSON string
      */
     private String writeSet(Set<String> set) throws JsonProcessingException {
-        return objectMapper.writeValueAsString(set);
+        return typeObjectMapper.writeValueAsString(set);
     }
     
     /**
@@ -530,5 +573,38 @@ public class OAuth2MigrationTool {
         migrateClientDetails();
         // Execute token migration
         migrateAccessTokens();
+    }
+
+    private OAuth2Authorization.Builder createAuthorizationBuilder(RegisteredClient registeredClient, 
+            String clientId, Set<String> scopes, OAuth2AccessToken accessToken) {
+        OAuth2Authorization.Builder authorizationBuilder = OAuth2Authorization.withRegisteredClient(registeredClient)
+                .principalName(clientId)
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(scopes);
+
+        // 创建token metadata，使用字符串形式存储时间
+        Map<String, Object> tokenClaims = new HashMap<>();
+        tokenClaims.put("sub", clientId);
+        List auds = new ArrayList<>();
+        auds.add(registeredClient.getClientSettings().getSetting("resource.id"));
+        if(!auds.isEmpty()) {
+            tokenClaims.put("aud", auds);
+        }
+        tokenClaims.put("nbf", accessToken.getIssuedAt());
+        tokenClaims.put("scope", scopes);
+        tokenClaims.put("iss", "http://localhost:9000");
+        tokenClaims.put("exp", accessToken.getExpiresAt());
+        tokenClaims.put("iat", accessToken.getIssuedAt());
+        tokenClaims.put("jti", UUID.randomUUID().toString());
+
+        Map<String, Object> tokenMetadata = new HashMap<>();
+        tokenMetadata.put(OAuth2Authorization.Token.CLAIMS_METADATA_NAME, tokenClaims);
+        tokenMetadata.put(OAuth2Authorization.Token.INVALIDATED_METADATA_NAME, false);
+        tokenMetadata.put("org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat", 
+                         "self-contained");
+
+        authorizationBuilder.token(accessToken, metadata -> metadata.putAll(tokenMetadata));
+
+        return authorizationBuilder;
     }
 } 
