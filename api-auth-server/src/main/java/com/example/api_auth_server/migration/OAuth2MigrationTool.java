@@ -19,7 +19,6 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
-import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
@@ -37,6 +36,8 @@ import java.time.Instant;
 import java.util.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+
+import com.example.api_auth_server.util.EncryptUtil;
 
 /**
  * OAuth2 Data Migration Tool
@@ -62,6 +63,9 @@ public class OAuth2MigrationTool {
     
     @Autowired
     private org.springframework.core.env.Environment environment;
+    
+    @Autowired
+    private EncryptUtil encryptUtil;
     
     /**
      * Migrate client details data
@@ -356,6 +360,9 @@ public class OAuth2MigrationTool {
                     Map<String, Object> tokenMap = objectMapper.readValue(tokenJson, Map.class);
                     
                     String tokenValue = (String) tokenMap.get("access_token");
+                    // 加密token值
+                    String encryptedTokenValue = encryptUtil.encrypt(tokenValue);
+                    
                     Set<String> scopes = new HashSet<>();
                     if (tokenMap.containsKey("scope")) {
                         List<String> scopeList = Arrays.stream(tokenMap.get("scope").toString().split(",")).toList();
@@ -365,10 +372,10 @@ public class OAuth2MigrationTool {
                     // Parse expiration time
                     long expiresInSeconds = (Integer) tokenMap.get("expires_in");
                     
-                    // Create access token
+                    // Create access token with encrypted value
                     OAuth2AccessToken accessToken = new OAuth2AccessToken(
                             OAuth2AccessToken.TokenType.BEARER,
-                            tokenValue,
+                            encryptedTokenValue,
                             Instant.now(),
                             Instant.now().plusSeconds(expiresInSeconds),
                             scopes
@@ -410,7 +417,7 @@ public class OAuth2MigrationTool {
                             writeMap(authorization.getAttributes()),
                             null,
                             writeSet(authorization.getAuthorizedScopes()),
-                            tokenValue,
+                            accessToken.getTokenValue(),
                             Timestamp.from(accessToken.getIssuedAt()),
                             Timestamp.from(accessToken.getExpiresAt()),
                             accessToken.getTokenType().getValue(),

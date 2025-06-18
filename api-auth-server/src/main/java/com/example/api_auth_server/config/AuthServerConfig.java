@@ -118,9 +118,6 @@ public class AuthServerConfig {
             }
             @Override
             public OAuth2Authorization findByToken(String token, OAuth2TokenType type) {
-                System.out.println(eu.encrypt(token)); // oTqZR/y6NZvHM+Xv3vwhvptGZqKo/yPxL3RDMfS6T90n0W6tI4gwsjePfgxjjsu/
-                System.out.println(eu.encrypt(token)); // LKHCZ1pl9L9Y5bvF4c8lTe8u7wsgXrlLLfOnJDIfeScwz3YGx+fo2o0ggHeu5GkT
-                System.out.println(eu.encrypt(token)); // pIDOBTVS3dBMyg+XlhSjvxn+b6g4YURym2huK/UApFltUmhWqtB9tkvrMr4Og3fr
                 OAuth2Authorization auth = delegate.findByToken(eu.encrypt(token), type);
                 return auth == null ? null : eu.decryptAccessToken(auth);
             }
