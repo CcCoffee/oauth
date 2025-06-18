@@ -1,11 +1,13 @@
 package com.example.api_auth_server.config;
 
 import com.example.api_auth_server.service.KeyStoreJwkService;
+import com.example.api_auth_server.util.EncryptUtil;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,7 +18,9 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
@@ -86,9 +90,41 @@ public class AuthServerConfig {
         );
     }
 
+//    @Bean
+//    public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate,
+//            RegisteredClientRepository registeredClientRepository) {
+//        return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
+//    }
+
     @Bean
-    public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate,
-            RegisteredClientRepository registeredClientRepository) {
-        return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
+    public OAuth2AuthorizationService customOAuth2AuthorizationService(
+            JdbcOperations jdbcOps,
+            RegisteredClientRepository repo,
+            EncryptUtil eu) {
+        var delegate = new JdbcOAuth2AuthorizationService(jdbcOps, repo);
+        return new OAuth2AuthorizationService() {
+            @Override
+            public void save(OAuth2Authorization auth) {
+                delegate.save(eu.encryptAccessToken(auth));
+            }
+            @Override
+            public void remove(OAuth2Authorization auth) {
+                delegate.remove(auth);
+            }
+            @Override
+            public OAuth2Authorization findById(String id) {
+                OAuth2Authorization auth = delegate.findById(id);
+                return auth == null ? null : eu.decryptAccessToken(auth);
+            }
+            @Override
+            public OAuth2Authorization findByToken(String token, OAuth2TokenType type) {
+                System.out.println(eu.encrypt(token)); // oTqZR/y6NZvHM+Xv3vwhvptGZqKo/yPxL3RDMfS6T90n0W6tI4gwsjePfgxjjsu/
+                System.out.println(eu.encrypt(token)); // LKHCZ1pl9L9Y5bvF4c8lTe8u7wsgXrlLLfOnJDIfeScwz3YGx+fo2o0ggHeu5GkT
+                System.out.println(eu.encrypt(token)); // pIDOBTVS3dBMyg+XlhSjvxn+b6g4YURym2huK/UApFltUmhWqtB9tkvrMr4Og3fr
+                OAuth2Authorization auth = delegate.findByToken(eu.encrypt(token), type);
+                return auth == null ? null : eu.decryptAccessToken(auth);
+            }
+        };
     }
-} 
+
+}
