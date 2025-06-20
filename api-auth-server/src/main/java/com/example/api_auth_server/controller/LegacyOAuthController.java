@@ -6,7 +6,9 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
+import com.example.api_auth_server.service.TokenService;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
@@ -36,9 +39,11 @@ public class LegacyOAuthController {
     private String keyAlias;
 
     private final JwtDecoder jwtDecoder;
+    private final TokenService tokenService;
 
-    public LegacyOAuthController(JwtDecoder jwtDecoder) {
+    public LegacyOAuthController(JwtDecoder jwtDecoder, TokenService tokenService) {
         this.jwtDecoder = jwtDecoder;
+        this.tokenService = tokenService;
     }
     
     /**
@@ -105,6 +110,56 @@ public class LegacyOAuthController {
             error.put("error", "invalid_token");
             error.put("error_description", msg);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    /**
+     * Remove token API with Spring Security Authentication
+     * 使用Spring Security Authentication对象进行客户端验证
+     * @param token 要删除的token
+     * @param authentication Spring Security提供的认证对象，包含已验证的客户端信息
+     * @return 删除结果
+     */
+    @PostMapping("/oauth/remove_token")
+    public ResponseEntity<Map<String, Object>> removeToken(@RequestParam("token") String token, 
+                                                          Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            // 1. 获取已认证的客户端ID
+            // Spring Security已经验证了Basic Auth，这里直接获取客户端ID
+            String clientId = authentication.getName();
+            
+            // 2. 验证token是否存在
+            if (!tokenService.isTokenValid(token)) {
+                response.put("error", "invalid_token");
+                response.put("error_description", "Token not found or expired");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+            
+            // 3. 获取token对应的客户端ID（可选，用于日志记录）
+            Optional<String> tokenClientId = tokenService.findClientIdByToken(token);
+            
+            // 4. 删除token
+            boolean deleted = tokenService.deleteTokenByValue(token);
+            if (deleted) {
+                response.put("message", "Token removed successfully");
+                response.put("authenticated_client_id", clientId);
+                response.put("authorities", authentication.getAuthorities());
+                if (tokenClientId.isPresent()) {
+                    response.put("token_client_id", tokenClientId.get());
+                }
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("error", "token_not_found");
+                response.put("error_description", "Token could not be deleted");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+            
+        } catch (Exception e) {
+            response.put("error", "server_error");
+            response.put("error_description", "Internal server error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 

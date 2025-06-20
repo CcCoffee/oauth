@@ -6,9 +6,11 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcOperations;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -52,6 +54,36 @@ public class AuthServerConfig {
         http.cors(Customizer.withDefaults());
         http.httpBasic(Customizer.withDefaults());
         return http.build();
+    }
+
+    /**
+     * Legacy OAuth endpoints security configuration
+     * 为legacy OAuth端点配置Basic Authentication
+     */
+    @Bean
+    @Order(2)
+    public SecurityFilterChain legacyOAuthSecurityFilterChain(HttpSecurity http, 
+                                                             @Lazy AuthenticationManager oAuth2ClientAuthenticationManager) throws Exception {
+        http
+            .securityMatcher("/oauth/remove_token")
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/oauth/remove_token").authenticated()
+                .anyRequest().permitAll()
+            )
+            .httpBasic(Customizer.withDefaults())
+            .authenticationManager(oAuth2ClientAuthenticationManager)
+            .csrf(csrf -> csrf.disable());
+        
+        return http.build();
+    }
+
+    /**
+     * 用于Legacy OAuth端点的AuthenticationManager
+     * 使用@Lazy注解避免循环依赖
+     */
+    @Bean
+    public AuthenticationManager oAuth2ClientAuthenticationManager(@Lazy OAuth2ClientAuthenticationProvider oAuth2ClientAuthenticationProvider) {
+        return new ProviderManager(oAuth2ClientAuthenticationProvider);
     }
 
     @Bean
