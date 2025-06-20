@@ -14,6 +14,9 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.password.StandardPasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -30,6 +33,7 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
 import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -37,9 +41,11 @@ import org.springframework.security.web.SecurityFilterChain;
 public class AuthServerConfig {
 
     private final KeyStoreJwkService keyStoreJwkService;
+    private final AdminProperties adminProperties;
 
-    public AuthServerConfig(KeyStoreJwkService keyStoreJwkService) {
+    public AuthServerConfig(KeyStoreJwkService keyStoreJwkService, AdminProperties adminProperties) {
         this.keyStoreJwkService = keyStoreJwkService;
+        this.adminProperties = adminProperties;
     }
 
     @Bean
@@ -57,8 +63,8 @@ public class AuthServerConfig {
     }
 
     /**
-     * Legacy OAuth endpoints security configuration
-     * 为legacy OAuth端点配置Basic Authentication
+     * Legacy OAuth remove_token endpoint security configuration
+     * 为legacy OAuth remove_token端点配置OAuth2客户端认证
      */
     @Bean
     @Order(2)
@@ -75,6 +81,62 @@ public class AuthServerConfig {
             .csrf(csrf -> csrf.disable());
         
         return http.build();
+    }
+
+    /**
+     * Migration API security configuration
+     * 为migration API配置admin用户认证
+     */
+    @Bean
+    @Order(3)
+    public SecurityFilterChain migrationApiSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .securityMatcher("/api/admin/migration/**", "/api/migration/**", "/clients/**")
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/api/admin/migration/**").hasRole("ADMIN")
+                .requestMatchers("/api/migration/**").hasRole("ADMIN")
+                .requestMatchers("/clients/**").hasRole("ADMIN")
+                .anyRequest().permitAll()
+            )
+            .httpBasic(Customizer.withDefaults())
+            .userDetailsService(adminUserDetailsService())
+            .csrf(csrf -> csrf.disable());
+        
+        return http.build();
+    }
+
+    /**
+     * Default security configuration for other endpoints
+     * 其他端点的默认安全配置
+     */
+    @Bean
+    @Order(4)
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/oauth/token_key", "/oauth/check_token", "/oauth/token", "/api-docs/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .httpBasic(Customizer.withDefaults())
+            .csrf(csrf -> csrf.disable());
+        
+        return http.build();
+    }
+
+    /**
+     * Admin用户的UserDetailsService
+     * 使用AdminProperties中的配置创建In-memory用户
+     */
+    @Bean
+    public UserDetailsService adminUserDetailsService() {
+        // 从AdminProperties获取admin用户信息
+        UserDetails admin = User.builder()
+                .username(adminProperties.getUsername())
+                .password(passwordEncoder().encode(adminProperties.getPassword()))
+                .roles("ADMIN")
+                .build();
+        
+        return new InMemoryUserDetailsManager(admin);
     }
 
     /**

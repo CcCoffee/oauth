@@ -28,14 +28,15 @@ public class SecurityHttpFilter extends OncePerRequestFilter {
             "/oauth/token_key"
     );
     
+    // 移除migration和clients相关路径，这些现在由Spring Security配置管理
     private final List<String> adminPaths = List.of(
-            "/api/admin/**", 
-            "/clients/**"
+            // 保留其他可能的admin路径，但移除migration和clients
     );
 
     public SecurityHttpFilter(AdminProperties adminProperties) {
         this.adminProperties = adminProperties;
     }
+    
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) 
             throws ServletException, IOException {
@@ -45,6 +46,12 @@ public class SecurityHttpFilter extends OncePerRequestFilter {
         
         // Allow access to public paths
         if (isPublicPath(requestURI)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        
+        // 跳过Spring Security管理的路径 
+        if (isSpringSecurityManagedPath(requestURI)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -73,6 +80,22 @@ public class SecurityHttpFilter extends OncePerRequestFilter {
     
     private boolean isAdminPath(String requestURI) {
         return adminPaths.stream()
+                .anyMatch(pattern -> pathMatcher.match(pattern, requestURI));
+    }
+    
+    /**
+     * 检查是否为Spring Security管理的路径
+     * 这些路径由Spring Security SecurityFilterChain处理，不需要此过滤器干预
+     */
+    private boolean isSpringSecurityManagedPath(String requestURI) {
+        List<String> springSecurityPaths = List.of(
+                "/oauth/remove_token",           // OAuth2客户端认证
+                "/api/admin/migration/**",       // Migration API (admin认证)
+                "/api/migration/**",             // Migration API (admin认证)
+                "/clients/**"                    // Clients API (admin认证)
+        );
+        
+        return springSecurityPaths.stream()
                 .anyMatch(pattern -> pathMatcher.match(pattern, requestURI));
     }
     
