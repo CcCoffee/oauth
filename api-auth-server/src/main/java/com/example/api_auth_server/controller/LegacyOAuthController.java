@@ -10,11 +10,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.StringReader;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ReadListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
@@ -24,6 +31,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidationException;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -86,33 +94,155 @@ public class LegacyOAuthController {
 
     /**
      * Intercepts /oauth/token requests and forwards them to /oauth2/token
-     * Compatible with legacy OAuth2 behavior: when no scope is provided, use all client scopes
+     * Compatible with legacy OAuth2 behavior: 
+     * 1. Prioritizes form body parameters over query parameters
+     * 2. Falls back to query parameters when form body doesn't contain grant_type/scope
+     * 3. When no scope is provided, use all client scopes
      */
     @RequestMapping(value = "/oauth/token", method = {RequestMethod.POST, RequestMethod.GET})
     public void handleTokenRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        // Check if scope parameter is missing
-        String scope = request.getParameter("scope");
-        String clientId = extractClientId(request);
+        // Separate form body parameters and query parameters
+
+        if (!StringUtils.hasText(request.getParameter("grant_type"))) {
+
+        }
+
+        Map<String, String> formParams = extractFormParameters(request);
+        Map<String, String> queryParams = extractQueryParameters(request);
         
+        // Build final parameter map with priority: form body > query parameters
+        Map<String, String> finalParams = new HashMap<>();
+        
+        // Start with query parameters
+        finalParams.putAll(queryParams);
+        
+        // Override with form parameters (higher priority)
+        finalParams.putAll(formParams);
+        
+        // Special handling: if grant_type or scope is missing from form body, use query values
+        if (!formParams.containsKey("grant_type") && queryParams.containsKey("grant_type")) {
+            finalParams.put("grant_type", queryParams.get("grant_type"));
+        }
+        if (!formParams.containsKey("scope") && queryParams.containsKey("scope")) {
+            finalParams.put("scope", queryParams.get("scope"));
+        }
+        
+        // Extract client ID and handle default scope logic
+        String clientId = extractClientId(request);
+        String scope = finalParams.get("scope");
+        
+        // Handle scope - if missing, try to get default scopes from client
         if (scope == null && clientId != null) {
-            // Find the registered client
             RegisteredClient registeredClient = registeredClientRepository.findByClientId(clientId);
             if (registeredClient != null) {
                 Set<String> clientScopes = registeredClient.getScopes();
                 if (!clientScopes.isEmpty()) {
-                    // Create a wrapper request with default scopes
                     String defaultScope = String.join(" ", clientScopes);
-                    LegacyTokenRequestWrapper wrappedRequest = new LegacyTokenRequestWrapper(request, defaultScope);
-                    RequestDispatcher dispatcher = wrappedRequest.getRequestDispatcher("/oauth2/token");
-                    dispatcher.forward(wrappedRequest, response);
-                    return;
+                    finalParams.put("scope", defaultScope);
                 }
             }
         }
         
-        // Forward original request if scope is provided or client not found
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/oauth2/token");
-        dispatcher.forward(request, response);
+        // Convert all parameters to application/x-www-form-urlencoded format
+        String formEncodedBody = buildFormEncodedBody(finalParams);
+        
+        // Create wrapped request with form-encoded body
+        FormEncodedRequestWrapper wrappedRequest = new FormEncodedRequestWrapper(request, formEncodedBody);
+        RequestDispatcher dispatcher = wrappedRequest.getRequestDispatcher("/oauth2/token");
+        dispatcher.forward(wrappedRequest, response);
+    }
+
+    /**
+     * Extract form body parameters from request
+     */
+    private Map<String, String> extractFormParameters(HttpServletRequest request) {
+        Map<String, String> formParams = new HashMap<>();
+        
+        // Only extract form parameters if it's a POST request with form content type
+        if ("POST".equalsIgnoreCase(request.getMethod()) && 
+            request.getContentType() != null && 
+            request.getContentType().startsWith("application/x-www-form-urlencoded")) {
+            
+            try {
+                // Read the request body
+                StringBuilder body = new StringBuilder();
+                String line;
+                try (BufferedReader reader = request.getReader()) {
+                    while ((line = reader.readLine()) != null) {
+                        body.append(line);
+                    }
+                }
+                
+                // Parse form-encoded parameters
+                String bodyContent = body.toString();
+                if (!bodyContent.isEmpty()) {
+                    String[] pairs = bodyContent.split("&");
+                    for (String pair : pairs) {
+                        String[] keyValue = pair.split("=", 2);
+                        if (keyValue.length == 2) {
+                            String key = java.net.URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8);
+                            String value = java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
+                            formParams.put(key, value);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // If we can't read the form body, fall back to empty map
+                // This allows query parameters to be used instead
+            }
+        }
+        
+        return formParams;
+    }
+
+    /**
+     * Extract query parameters from request
+     */
+    private Map<String, String> extractQueryParameters(HttpServletRequest request) {
+        Map<String, String> queryParams = new HashMap<>();
+        
+        String queryString = request.getQueryString();
+        if (queryString != null && !queryString.isEmpty()) {
+            String[] pairs = queryString.split("&");
+            for (String pair : pairs) {
+                String[] keyValue = pair.split("=", 2);
+                if (keyValue.length == 2) {
+                    try {
+                        String key = java.net.URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8);
+                        String value = java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
+                        queryParams.put(key, value);
+                    } catch (Exception e) {
+                        // Skip malformed parameters
+                    }
+                } else if (keyValue.length == 1) {
+                    // Handle parameters without values
+                    try {
+                        String key = java.net.URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8);
+                        queryParams.put(key, "");
+                    } catch (Exception e) {
+                        // Skip malformed parameters
+                    }
+                }
+            }
+        }
+        
+        return queryParams;
+    }
+
+    /**
+     * Build application/x-www-form-urlencoded body from parameter map
+     */
+    private String buildFormEncodedBody(Map<String, String> params) {
+        return params.entrySet().stream()
+                .map(entry -> {
+                    try {
+                        return URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8) + "=" +
+                               URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to encode parameter: " + entry.getKey(), e);
+                    }
+                })
+                .collect(Collectors.joining("&"));
     }
 
     /**
@@ -170,45 +300,94 @@ public class LegacyOAuthController {
     }
 
     /**
-     * HttpServletRequest wrapper that adds a default scope parameter
+     * HttpServletRequest wrapper that converts query parameters to form-encoded body
+     * Ensures OAuth2 parameters are sent as application/x-www-form-urlencoded
      */
-    private static class LegacyTokenRequestWrapper extends HttpServletRequestWrapper {
-        private final String scope;
+    private static class FormEncodedRequestWrapper extends HttpServletRequestWrapper {
+        private final String formEncodedBody;
+        private final byte[] bodyBytes;
         
-        public LegacyTokenRequestWrapper(HttpServletRequest request, String scope) {
+        public FormEncodedRequestWrapper(HttpServletRequest request, String formEncodedBody) {
             super(request);
-            this.scope = scope;
+            this.formEncodedBody = formEncodedBody;
+            this.bodyBytes = formEncodedBody.getBytes(StandardCharsets.UTF_8);
         }
         
         @Override
-        public String getParameter(String name) {
-            if ("scope".equals(name)) {
-                return scope;
+        public String getMethod() {
+            return "POST";
+        }
+        
+        @Override
+        public String getContentType() {
+            return "application/x-www-form-urlencoded";
+        }
+        
+        @Override
+        public int getContentLength() {
+            return bodyBytes.length;
+        }
+        
+        @Override
+        public long getContentLengthLong() {
+            return bodyBytes.length;
+        }
+        
+        @Override
+        public BufferedReader getReader() {
+            return new BufferedReader(new StringReader(formEncodedBody));
+        }
+        
+        @Override
+        public ServletInputStream getInputStream() {
+            return new ServletInputStream() {
+                private final ByteArrayInputStream inputStream = new ByteArrayInputStream(bodyBytes);
+                
+                @Override
+                public int read() {
+                    return inputStream.read();
+                }
+                
+                @Override
+                public boolean isFinished() {
+                    return inputStream.available() == 0;
+                }
+                
+                @Override
+                public boolean isReady() {
+                    return true;
+                }
+                
+                @Override
+                public void setReadListener(ReadListener readListener) {
+                    // Not implemented for this use case
+                }
+            };
+        }
+        
+        // Remove query string to prevent duplicate parameters
+        @Override
+        public String getQueryString() {
+            return null;
+        }
+        
+        @Override
+        public String getRequestURI() {
+            String uri = super.getRequestURI();
+            // Remove query parameters from URI
+            int queryIndex = uri.indexOf('?');
+            return queryIndex != -1 ? uri.substring(0, queryIndex) : uri;
+        }
+        
+        @Override
+        public StringBuffer getRequestURL() {
+            StringBuffer url = new StringBuffer(super.getRequestURL().toString());
+            // Remove query parameters from URL
+            int queryIndex = url.indexOf("?");
+            if (queryIndex != -1) {
+                url.setLength(queryIndex);
             }
-            return super.getParameter(name);
-        }
-        
-        @Override
-        public String[] getParameterValues(String name) {
-            if ("scope".equals(name)) {
-                return new String[]{scope};
-            }
-            return super.getParameterValues(name);
-        }
-        
-        @Override
-        public Enumeration<String> getParameterNames() {
-            Set<String> names = Collections.list(super.getParameterNames()).stream()
-                    .collect(Collectors.toSet());
-            names.add("scope");
-            return Collections.enumeration(names);
-        }
-        
-        @Override
-        public Map<String, String[]> getParameterMap() {
-            Map<String, String[]> params = new HashMap<>(super.getParameterMap());
-            params.put("scope", new String[]{scope});
-            return params;
+            return url;
         }
     }
 
