@@ -7,19 +7,24 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-@Aspect
-@Component
+import java.util.Map;
+
+//@Aspect
+//@Component
 public class ControllerLoggingAspect {
     
     private static final Logger apiLogger = LoggerFactory.getLogger("API_LOG");
     private final ObjectMapper objectMapper;
+    private final MethodParameterExtractor parameterExtractor;
     
-    public ControllerLoggingAspect(ObjectMapper objectMapper) {
+    public ControllerLoggingAspect(ObjectMapper objectMapper, MethodParameterExtractor parameterExtractor) {
         this.objectMapper = objectMapper;
+        this.parameterExtractor = parameterExtractor;
     }
     
     @Around("@within(org.springframework.web.bind.annotation.RestController)")
@@ -35,19 +40,25 @@ public class ControllerLoggingAspect {
                 logData.setEndpoint(request.getRequestURI());
                 logData.setMethod(request.getMethod());
                 
-                // Extract client ID from request
-                String requestBody = getRequestBody(joinPoint);
-                String clientId = SensitiveDataMasker.extractClientId(requestBody, request.getQueryString());
+                // Extract method parameters
+                Map<String, Object> parameters = parameterExtractor.extractParameters(joinPoint);
+                logData.setParameters(parameters);
+                
+                // Extract client ID from parameters or request
+                String clientId = extractClientId(parameters, request);
                 logData.setClientId(clientId);
             }
             
             // Execute the method
             Object result = joinPoint.proceed();
             
-            // Calculate duration and set success status
+            // Calculate duration and extract status from result
             long duration = System.currentTimeMillis() - startTime;
             logData.setDuration(duration);
-            logData.setStatus("200");
+            
+            // Extract status code from result
+            String statusCode = extractStatusCode(result);
+            logData.setStatus(statusCode);
             
             // Log successful API call
             logApiCall(logData);
@@ -68,6 +79,19 @@ public class ControllerLoggingAspect {
         }
     }
     
+    /**
+     * 从方法返回值中提取HTTP状态码
+     */
+    private String extractStatusCode(Object result) {
+        if (result instanceof ResponseEntity) {
+            ResponseEntity<?> responseEntity = (ResponseEntity<?>) result;
+            return String.valueOf(responseEntity.getStatusCode().value());
+        }
+        
+        // 如果不是ResponseEntity，默认返回200
+        return "200";
+    }
+    
     private void logApiCall(ApiLogData logData) {
         try {
             String jsonLog = objectMapper.writeValueAsString(logData);
@@ -77,13 +101,16 @@ public class ControllerLoggingAspect {
         }
     }
     
-    private String getRequestBody(ProceedingJoinPoint joinPoint) {
-        Object[] args = joinPoint.getArgs();
-        for (Object arg : args) {
-            if (arg != null && arg.toString().contains("=")) {
-                return SensitiveDataMasker.maskSensitiveData(arg.toString());
-            }
+    private String extractClientId(Map<String, Object> parameters, HttpServletRequest request) {
+        // First try to get client_id from method parameters
+        Object clientIdParam = parameters.get("client_id");
+        if (clientIdParam != null) {
+            return clientIdParam.toString();
         }
-        return null;
+        
+        // Fall back to extracting from request (including Basic Auth)
+        String authorizationHeader = request.getHeader("Authorization");
+        String clientId = SensitiveDataMasker.extractClientId(null, request.getQueryString(), authorizationHeader);
+        return clientId;
     }
 }
