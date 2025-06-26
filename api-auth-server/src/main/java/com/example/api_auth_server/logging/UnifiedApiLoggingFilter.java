@@ -16,16 +16,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @Component
-public class OAuth2EndpointLoggingFilter extends OncePerRequestFilter {
+public class UnifiedApiLoggingFilter extends OncePerRequestFilter {
     
     private static final Logger apiLogger = LoggerFactory.getLogger("API_LOG");
     private final ObjectMapper objectMapper;
     private final FormDataParameterExtractor formDataExtractor;
     private final JsonParameterExtractor jsonExtractor;
     
-    public OAuth2EndpointLoggingFilter(ObjectMapper objectMapper, 
-                                     FormDataParameterExtractor formDataExtractor,
-                                     JsonParameterExtractor jsonExtractor) {
+    public UnifiedApiLoggingFilter(ObjectMapper objectMapper, 
+                                 FormDataParameterExtractor formDataExtractor,
+                                 JsonParameterExtractor jsonExtractor) {
         this.objectMapper = objectMapper;
         this.formDataExtractor = formDataExtractor;
         this.jsonExtractor = jsonExtractor;
@@ -35,8 +35,8 @@ public class OAuth2EndpointLoggingFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, 
                                   FilterChain filterChain) throws ServletException, IOException {
         
-        // Only process OAuth2 endpoints
-        if (!isOAuth2Endpoint(request.getRequestURI())) {
+        // Only process API endpoints defined in Controllers
+        if (!shouldLogRequest(request.getRequestURI())) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -81,7 +81,7 @@ public class OAuth2EndpointLoggingFilter extends OncePerRequestFilter {
             apiLogger.info(jsonLog);
             
         } catch (Exception e) {
-            apiLogger.error("Failed to log OAuth2 endpoint request", e);
+            apiLogger.error("Failed to log API request", e);
         }
     }
     
@@ -127,11 +127,16 @@ public class OAuth2EndpointLoggingFilter extends OncePerRequestFilter {
         return clientId;
     }
     
-    private boolean isOAuth2Endpoint(String uri) {
-        // Only intercept Spring Boot OAuth2 default endpoints
-        // Custom controller endpoints will be handled by AOP
-        return uri.startsWith("/oauth2/") || 
-            //    uri.startsWith("/oauth/") ||
-               uri.startsWith("/.well-known/");
+    /**
+     * 判断是否应该记录请求日志
+     * 覆盖Controller中定义的API端点
+     */
+    private boolean shouldLogRequest(String uri) {
+        return uri.startsWith("/oauth/") ||         // LegacyOAuthController
+               uri.startsWith("/oauth2/") ||        // OAuth2端点  
+               uri.startsWith("/client") ||        // 客户端管理端点
+               uri.startsWith("/api/") ||           // MigrationController等
+               uri.startsWith("/.well-known/");   // OIDC发现端点
+
     }
 }
