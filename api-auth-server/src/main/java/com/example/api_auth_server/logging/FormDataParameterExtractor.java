@@ -12,8 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 表单数据参数提取器
- * 处理 application/x-www-form-urlencoded 类型的请求
+ * Form data parameter extractor
+ * Handles application/x-www-form-urlencoded type requests
  */
 @Component
 public class FormDataParameterExtractor implements RequestParameterExtractor {
@@ -27,19 +27,19 @@ public class FormDataParameterExtractor implements RequestParameterExtractor {
         Map<String, Object> parameters = new HashMap<>();
         
         try {
-            // 提取表单参数
+            // Extract form parameters
             Map<String, String> formParams = extractFormParameters(request);
             parameters.putAll(formParams);
             
-            // 提取查询参数
+            // Extract query parameters
             Map<String, String> queryParams = extractQueryParameters(request);
             parameters.putAll(queryParams);
             
-            // 对敏感参数进行脱敏
+            // Mask sensitive parameters
             return maskSensitiveParameters(parameters);
             
         } catch (Exception e) {
-            // 参数提取失败时返回空map
+            // Return empty map when parameter extraction fails
             return new HashMap<>();
         }
     }
@@ -64,7 +64,7 @@ public class FormDataParameterExtractor implements RequestParameterExtractor {
     }
     
     /**
-     * 提取表单参数
+     * Extract form parameters
      */
     private Map<String, String> extractFormParameters(HttpServletRequest request) {
         Map<String, String> formParams = new HashMap<>();
@@ -79,14 +79,14 @@ public class FormDataParameterExtractor implements RequestParameterExtractor {
                 parseFormEncodedParameters(body, formParams);
             }
         } catch (Exception e) {
-            // 读取失败时忽略
+            // Ignore read failures
         }
         
         return formParams;
     }
     
     /**
-     * 提取查询参数
+     * Extract query parameters
      */
     private Map<String, String> extractQueryParameters(HttpServletRequest request) {
         Map<String, String> queryParams = new HashMap<>();
@@ -100,7 +100,7 @@ public class FormDataParameterExtractor implements RequestParameterExtractor {
     }
     
     /**
-     * 解析表单编码的参数
+     * Parse form-encoded parameters
      */
     private void parseFormEncodedParameters(String data, Map<String, String> params) {
         if (data == null || data.isEmpty()) {
@@ -117,14 +117,14 @@ public class FormDataParameterExtractor implements RequestParameterExtractor {
                         URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8) : "";
                     params.put(key, value);
                 } catch (Exception e) {
-                    // 解码失败时跳过此参数
+                    // Skip this parameter if decoding fails
                 }
             }
         }
     }
     
     /**
-     * 获取请求体内容
+     * Get request body content
      */
     private String getRequestBody(HttpServletRequest request) {
         try {
@@ -135,7 +135,7 @@ public class FormDataParameterExtractor implements RequestParameterExtractor {
                     return new String(content, StandardCharsets.UTF_8);
                 }
             } else {
-                // 尝试读取请求体（注意：只能读取一次）
+                // Try to read request body (note: can only be read once)
                 StringBuilder body = new StringBuilder();
                 String line;
                 try (BufferedReader reader = request.getReader()) {
@@ -146,13 +146,13 @@ public class FormDataParameterExtractor implements RequestParameterExtractor {
                 return body.toString();
             }
         } catch (Exception e) {
-            // 读取失败时返回null
+            // Return null when read fails
         }
         return null;
     }
     
     /**
-     * 对敏感参数进行脱敏
+     * Mask sensitive parameters
      */
     private Map<String, Object> maskSensitiveParameters(Map<String, Object> params) {
         Map<String, Object> maskedParams = new HashMap<>();
@@ -172,7 +172,7 @@ public class FormDataParameterExtractor implements RequestParameterExtractor {
     }
     
     /**
-     * 判断是否为敏感参数
+     * Check if parameter is sensitive
      */
     private boolean isSensitiveParameter(String paramName) {
         String lowerName = paramName.toLowerCase();
@@ -185,7 +185,7 @@ public class FormDataParameterExtractor implements RequestParameterExtractor {
     }
     
     /**
-     * 脱敏值
+     * Mask value
      */
     private Object maskValue(Object value) {
         if (value == null) {

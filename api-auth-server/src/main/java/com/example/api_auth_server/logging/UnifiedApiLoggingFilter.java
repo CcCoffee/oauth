@@ -86,7 +86,7 @@ public class UnifiedApiLoggingFilter extends OncePerRequestFilter {
     }
     
     /**
-     * 提取请求参数
+     * Extract request parameters
      */
     private Map<String, Object> extractParameters(ContentCachingRequestWrapper request) {
         String contentType = request.getContentType();
@@ -96,22 +96,22 @@ public class UnifiedApiLoggingFilter extends OncePerRequestFilter {
         } else if (jsonExtractor.supports(contentType)) {
             return jsonExtractor.extractParameters(request);
         } else {
-            // 默认只提取查询参数
+            // Default to extracting only query parameters
             return formDataExtractor.extractParameters(request);
         }
     }
     
     /**
-     * 提取客户端ID
+     * Extract client ID
      */
     private String extractClientId(Map<String, Object> parameters, ContentCachingRequestWrapper request) {
-        // 首先尝试从参数中获取client_id
+        // First try to get client_id from parameters
         Object clientIdParam = parameters.get("client_id");
         if (clientIdParam != null) {
-            return clientIdParam.toString(); // 不再脱敏client_id
+            return clientIdParam.toString(); // No longer mask client_id
         }
         
-        // 从请求中提取（包括Basic Auth、查询字符串等）
+        // Extract from request (including Basic Auth, query string, etc.)
         String requestBody = null;
         try {
             byte[] content = request.getContentAsByteArray();
@@ -119,7 +119,7 @@ public class UnifiedApiLoggingFilter extends OncePerRequestFilter {
                 requestBody = new String(content, java.nio.charset.StandardCharsets.UTF_8);
             }
         } catch (Exception e) {
-            // 忽略读取错误
+            // Ignore read errors
         }
         
         String authorizationHeader = request.getHeader("Authorization");
@@ -128,15 +128,15 @@ public class UnifiedApiLoggingFilter extends OncePerRequestFilter {
     }
     
     /**
-     * 判断是否应该记录请求日志
-     * 覆盖Controller中定义的API端点
+     * Determine whether to log request
+     * Covers API endpoints defined in Controllers
      */
     private boolean shouldLogRequest(String uri) {
         return uri.startsWith("/oauth/") ||         // LegacyOAuthController
-               uri.startsWith("/oauth2/") ||        // OAuth2端点  
-               uri.startsWith("/client") ||        // 客户端管理端点
-               uri.startsWith("/api/") ||           // MigrationController等
-               uri.startsWith("/.well-known/");   // OIDC发现端点
+               uri.startsWith("/oauth2/") ||        // OAuth2 endpoints  
+               uri.startsWith("/client") ||        // Client management endpoints
+               uri.startsWith("/api/") ||           // MigrationController etc.
+               uri.startsWith("/.well-known/");   // OIDC discovery endpoints
 
     }
 }

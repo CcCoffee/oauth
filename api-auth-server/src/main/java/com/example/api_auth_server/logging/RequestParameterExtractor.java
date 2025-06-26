@@ -4,28 +4,28 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 /**
- * 请求参数提取器接口
- * 用于处理不同Content-Type的参数提取
+ * Request parameter extractor interface
+ * Used for handling parameter extraction for different Content-Types
  */
 public interface RequestParameterExtractor {
     
     /**
-     * 从HTTP请求中提取参数
-     * @param request HTTP请求
-     * @return 参数名称到值的映射
+     * Extract parameters from HTTP request
+     * @param request HTTP request
+     * @return mapping of parameter names to values
      */
     Map<String, Object> extractParameters(HttpServletRequest request);
     
     /**
-     * 判断是否支持指定的Content-Type
-     * @param contentType 内容类型
-     * @return 是否支持
+     * Check if specified Content-Type is supported
+     * @param contentType content type
+     * @return whether it's supported
      */
     boolean supports(String contentType);
     
     /**
-     * 获取支持的Content-Type列表
-     * @return Content-Type数组
+     * Get list of supported Content-Types
+     * @return Content-Type array
      */
     String[] getSupportedContentTypes();
 } 

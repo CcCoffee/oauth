@@ -13,8 +13,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * JSON参数提取器
- * 处理 application/json 类型的请求
+ * JSON parameter extractor
+ * Handles application/json type requests
  */
 @Component
 public class JsonParameterExtractor implements RequestParameterExtractor {
@@ -34,19 +34,19 @@ public class JsonParameterExtractor implements RequestParameterExtractor {
         Map<String, Object> parameters = new HashMap<>();
         
         try {
-            // 提取JSON请求体参数
+            // Extract JSON request body parameters
             Map<String, Object> jsonParams = extractJsonParameters(request);
             parameters.putAll(jsonParams);
             
-            // 提取查询参数（JSON请求也可能有查询参数）
+            // Extract query parameters (JSON requests may also have query parameters)
             Map<String, String> queryParams = extractQueryParameters(request);
             parameters.putAll(queryParams);
             
-            // 对敏感参数进行脱敏
+            // Mask sensitive parameters
             return maskSensitiveParameters(parameters);
             
         } catch (Exception e) {
-            // 参数提取失败时返回空map
+            // Return empty map when parameter extraction fails
             return new HashMap<>();
         }
     }
@@ -71,7 +71,7 @@ public class JsonParameterExtractor implements RequestParameterExtractor {
     }
     
     /**
-     * 提取JSON参数
+     * Extract JSON parameters
      */
     private Map<String, Object> extractJsonParameters(HttpServletRequest request) {
         Map<String, Object> jsonParams = new HashMap<>();
@@ -83,14 +83,14 @@ public class JsonParameterExtractor implements RequestParameterExtractor {
                 flattenJsonNode("", rootNode, jsonParams);
             }
         } catch (Exception e) {
-            // JSON解析失败时忽略
+            // Ignore JSON parsing failures
         }
         
         return jsonParams;
     }
     
     /**
-     * 递归展平JSON节点
+     * Recursively flatten JSON nodes
      */
     private void flattenJsonNode(String prefix, JsonNode node, Map<String, Object> result) {
         if (node.isObject()) {
@@ -106,14 +106,14 @@ public class JsonParameterExtractor implements RequestParameterExtractor {
                 flattenJsonNode(key, node.get(i), result);
             }
         } else {
-            // 叶子节点，存储值
+            // Leaf node, store value
             Object value = extractJsonValue(node);
             result.put(prefix, value);
         }
     }
     
     /**
-     * 提取JSON节点的值
+     * Extract value from JSON node
      */
     private Object extractJsonValue(JsonNode node) {
         if (node.isTextual()) {
@@ -136,7 +136,7 @@ public class JsonParameterExtractor implements RequestParameterExtractor {
     }
     
     /**
-     * 提取查询参数
+     * Extract query parameters
      */
     private Map<String, String> extractQueryParameters(HttpServletRequest request) {
         Map<String, String> queryParams = new HashMap<>();
@@ -153,7 +153,7 @@ public class JsonParameterExtractor implements RequestParameterExtractor {
                             java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8) : "";
                         queryParams.put(key, value);
                     } catch (Exception e) {
-                        // 解码失败时跳过此参数
+                        // Skip this parameter if decoding fails
                     }
                 }
             }
@@ -163,7 +163,7 @@ public class JsonParameterExtractor implements RequestParameterExtractor {
     }
     
     /**
-     * 获取请求体内容
+     * Get request body content
      */
     private String getRequestBody(HttpServletRequest request) {
         try {
@@ -174,7 +174,7 @@ public class JsonParameterExtractor implements RequestParameterExtractor {
                     return new String(content, StandardCharsets.UTF_8);
                 }
             } else {
-                // 尝试读取请求体（注意：只能读取一次）
+                // Try to read request body (note: can only be read once)
                 StringBuilder body = new StringBuilder();
                 String line;
                 try (BufferedReader reader = request.getReader()) {
@@ -185,13 +185,13 @@ public class JsonParameterExtractor implements RequestParameterExtractor {
                 return body.toString();
             }
         } catch (Exception e) {
-            // 读取失败时返回null
+            // Return null when read fails
         }
         return null;
     }
     
     /**
-     * 对敏感参数进行脱敏
+     * Mask sensitive parameters
      */
     private Map<String, Object> maskSensitiveParameters(Map<String, Object> params) {
         Map<String, Object> maskedParams = new HashMap<>();
@@ -211,7 +211,7 @@ public class JsonParameterExtractor implements RequestParameterExtractor {
     }
     
     /**
-     * 判断是否为敏感参数
+     * Check if parameter is sensitive
      */
     private boolean isSensitiveParameter(String paramName) {
         String lowerName = paramName.toLowerCase();
@@ -226,7 +226,7 @@ public class JsonParameterExtractor implements RequestParameterExtractor {
     }
     
     /**
-     * 脱敏值
+     * Mask value
      */
     private Object maskValue(Object value) {
         if (value == null) {
