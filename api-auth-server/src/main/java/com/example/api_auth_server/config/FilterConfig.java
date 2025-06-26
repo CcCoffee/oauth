@@ -2,6 +2,7 @@ package com.example.api_auth_server.config;
 
 import com.example.api_auth_server.filter.CsrfDisableFilter;
 import com.example.api_auth_server.filter.SecurityHttpFilter;
+import com.example.api_auth_server.logging.OAuth2EndpointLoggingFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +31,14 @@ public class FilterConfig {
     public FilterRegistrationBean<CsrfDisableFilter> csrfDisableFilterRegistration(CsrfDisableFilter filter) {
         FilterRegistrationBean<CsrfDisableFilter> registration = new FilterRegistrationBean<>(filter);
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 20);
+        registration.addUrlPatterns("/*");
+        return registration;
+    }
+
+    @Bean
+    public FilterRegistrationBean<OAuth2EndpointLoggingFilter> oauth2LoggingFilterRegistration(OAuth2EndpointLoggingFilter filter) {
+        FilterRegistrationBean<OAuth2EndpointLoggingFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 30);
         registration.addUrlPatterns("/*");
         return registration;
     }
