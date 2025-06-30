@@ -55,30 +55,30 @@ public class TokenResponseFilter extends OncePerRequestFilter {
                 String json = new String(content);
                 Map<String, Object> responseMap = objectMapper.readValue(json, Map.class);
                 
-                // Get token and expires_in
-                String token = (String) responseMap.get("access_token");
-                Integer expiresIn = (Integer) responseMap.get("expires_in");
-                
-                if (token != null && expiresIn != null) {
-                    // Calculate expiration time
-                    Instant expirationTime = Instant.now().plusSeconds(expiresIn);
-                    String formattedExpiration = formatter.format(expirationTime);
-                    
-                    // Create masked token
-                    String maskedToken = maskToken(token);
-                    
-                    // Extract client id from JWT if possible
-                    String clientId = extractClientIdFromJwt(token);
-                    
-                    // Log the information
-                    if (clientId != null) {
-                        logger.info("[Service token generated] - Client id: {}, Masked token: {}, Expires in: {}s, Expires at: {}", 
-                            clientId, maskedToken, expiresIn, formattedExpiration);
-                    } else {
-                        logger.info("[Profile token generated] - Masked token: {}, Expires in: {}s, Expires at: {}", 
-                            maskedToken, expiresIn, formattedExpiration);
+                // Handle legacy OAuth compatibility for /oauth/token
+                if (isLegacyOAuthEndpoint(path)) {
+                    // Convert token_type from "Bearer" to "bearer" for legacy compatibility
+                    if (responseMap.containsKey("token_type") && "Bearer".equals(responseMap.get("token_type"))) {
+                        responseMap.put("token_type", "bearer");
+                        
+                        // Write the modified response
+                        String modifiedJson = objectMapper.writeValueAsString(responseMap);
+                        byte[] modifiedContent = modifiedJson.getBytes();
+                        
+                        // Clear the original response and write the modified one
+                        response.resetBuffer();
+                        response.setContentLength(modifiedContent.length);
+                        response.getOutputStream().write(modifiedContent);
+                        response.getOutputStream().flush();
+                        
+                        // Log the token information with the original response data
+                        logTokenInformation(responseMap);
+                        return;
                     }
                 }
+                
+                // Log the token information for both endpoints
+                logTokenInformation(responseMap);
             }
             
             // Write the original content back
@@ -91,6 +91,37 @@ public class TokenResponseFilter extends OncePerRequestFilter {
     
     private boolean isTokenEndpoint(String path) {
         return path != null && (path.endsWith("/oauth2/token") || path.endsWith("/oauth/token"));
+    }
+    
+    private boolean isLegacyOAuthEndpoint(String path) {
+        return path != null && path.endsWith("/oauth/token");
+    }
+    
+    private void logTokenInformation(Map<String, Object> responseMap) {
+        // Get token and expires_in
+        String token = (String) responseMap.get("access_token");
+        Integer expiresIn = (Integer) responseMap.get("expires_in");
+        
+        if (token != null && expiresIn != null) {
+            // Calculate expiration time
+            Instant expirationTime = Instant.now().plusSeconds(expiresIn);
+            String formattedExpiration = formatter.format(expirationTime);
+            
+            // Create masked token
+            String maskedToken = maskToken(token);
+            
+            // Extract client id from JWT if possible
+            String clientId = extractClientIdFromJwt(token);
+            
+            // Log the information
+            if (clientId != null) {
+                logger.info("[Service token generated] - Client id: {}, Masked token: {}, Expires in: {}s, Expires at: {}", 
+                    clientId, maskedToken, expiresIn, formattedExpiration);
+            } else {
+                logger.info("[Profile token generated] - Masked token: {}, Expires in: {}s, Expires at: {}", 
+                    maskedToken, expiresIn, formattedExpiration);
+            }
+        }
     }
     
     private String maskToken(String token) {
